@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Page {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  title       String
+  description String?
+  blocks      Json
+  status      String      @default("DRAFT") // DRAFT | PUBLISHED
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  publishedAt DateTime?
+}
+
+model Navigation {
+  id        String   @id @default(uuid())
+  items     Json
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model AllowedIP {
+  id        String   @id @default(uuid())
+  ip        String   @unique
+  label     String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

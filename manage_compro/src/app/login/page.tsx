@@ -1,0 +1,1 @@
+export default function LoginPage() { return <main className="admin-card login"><h1>Masuk ke Manager</h1><form><label>Email<input type="email" required /></label><label>Password<input type="password" required /></label><button className="button" type="submit">Masuk</button></form></main>; }
