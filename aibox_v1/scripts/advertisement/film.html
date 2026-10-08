@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>AIBox — meet your moment</title>
+<style>html,body{margin:0;background:#101820}canvas{display:block;width:100%;height:auto}</style>
+<canvas id="film" width="1280" height="1080"></canvas>
+<script>
+// Deterministic motion artwork: the same timestamp always produces the same frame.
+const canvas = document.querySelector('canvas');
+const ctx = canvas.getContext('2d');
+const WIDTH = 1000, HEIGHT = 843.75, DURATION = 18;
+const assets = {};
+const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, n));
+const ease = n => 1 - Math.pow(1 - clamp(n), 3);
+const mix = (a, b, p) => a + (b - a) * p;
+
+window.ready = Promise.all(Object.entries({
+  booth: '/bg.png', guests: '/images/aibox-event-moment.webp', logo: '/logo.png',
+}).map(async ([key, url]) => {
+  const image = new Image(); image.src = url; await image.decode(); assets[key] = image;
+}));
+
+function photo(image, x, y, w, h, zoom = 1, focus = .5) {
+  const scale = Math.max(w / image.width, h / image.height) * zoom;
+  const dw = image.width * scale, dh = image.height * scale;
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.drawImage(image, x - (dw - w) * focus, y - (dh - h) / 2, dw, dh); ctx.restore();
+}
+
+function text(value, x, y, size = 20, color = '#fff', weight = 500, mono = false) {
+  ctx.fillStyle = color; ctx.font = `${weight} ${size}px ${mono ? 'monospace' : 'Arial, sans-serif'}`;
+  ctx.textBaseline = 'top'; value.split('\n').forEach((line, i) => ctx.fillText(line, x, y + i * size * 1.06));
+}
+
+function shade(strength = .65) {
+  const gradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+  gradient.addColorStop(0, `rgba(5,14,22,${strength})`); gradient.addColorStop(.7, 'rgba(5,14,22,.12)');
+  gradient.addColorStop(1, 'rgba(5,14,22,.75)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+}
+
+function label(number, value) {
+  text(`0${number} / ${value}`, 65, 65, 14, '#e3e9ed', 400, true);
+}
+
+function hand(x, y, size, t) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t * 3) * .1); ctx.scale(size / 24, size / 24);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = .7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke(new Path2D('M18 11V7a2 2 0 0 0-4 0v4 M14 10V5a2 2 0 0 0-4 0v6 M10 10V7a2 2 0 0 0-4 0v9 M18 8a2 2 0 0 1 4 0v7a7 7 0 0 1-7 7h-2c-2.8 0-4.5-1.2-6-3L2 13a2 2 0 0 1 3-2l1 1'));
+  ctx.restore();
+}
+
+function frame(x, y, w, h, reveal = 1, tilt = -.05) {
+  ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(tilt);
+  ctx.fillStyle = '#f4ead7'; ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.strokeStyle = '#b5985b'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(-w / 2 + 14, -h / 2 + 14, w - 28, h - 28);
+  // Geometric botanical artwork illustrates the custom frame, without claiming live generation.
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.ellipse(-w / 2 + 22, h / 2 - 36, 35 + i * 14, 95 + i * 13, -.4, Math.PI, Math.PI * 2);
+    ctx.stroke();
+  }
+  const imageHeight = h - 125;
+  ctx.fillStyle = '#182530'; ctx.fillRect(-w / 2 + 30, -h / 2 + 30, w - 60, imageHeight);
+  ctx.save(); ctx.beginPath(); ctx.rect(-w / 2 + 30, -h / 2 + 30, (w - 60) * clamp(reveal), imageHeight); ctx.clip();
+  photo(assets.guests, -w / 2 + 30, -h / 2 + 30, w - 60, imageHeight, 1, .35); ctx.restore();
+  text('a little more you.', -w / 2 + 36, h / 2 - 72, 25, '#423721', 600);
+  text('aibox / made with you', -w / 2 + 36, h / 2 - 36, 10, '#685f4c', 400, true);
+  ctx.restore();
+}
+
+function wave(t) {
+  if (t < 2.4) {
+    photo(assets.booth, 0, 0, WIDTH, HEIGHT, 1 + t * .012, .97);
+    shade(.78); label(1, 'meet magicbooth');
+    text('Meet your\nnew plus-one.', 65, 175 + 12 * (1 - ease(t)), 75, '#fff', 600);
+    text('a photobooth with a little more personality.', 65, 725, 17, '#d7dee3');
+  } else {
+    const p = t - 2.4;
+    photo(assets.guests, 0, 0, WIDTH, HEIGHT, 1.01 + p * .012, .47); shade(.45); label(1, 'a wave says hello');
+    const pulse = Math.sin(p * 2) * 5;
+    ctx.strokeStyle = '#ffffffaa'; ctx.lineWidth = 1;
+    ctx.strokeRect(620 - pulse, 330 - pulse, 240 + pulse * 2, 255 + pulse * 2);
+    hand(697, 392, 74, p);
+    text('hello, you.', 674, 548, 14, '#fff', 400, true);
+    text('No button.\nJust wave.', 65, 620, 67, '#fff', 600);
+    text('touch-free photo capture', 65, 737, 14, '#d7dee3', 400, true);
+    const fade = clamp(p / .45); ctx.fillStyle = `rgba(8,17,23,${1 - fade})`; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  }
+}
+
+function create(t) {
+  photo(assets.booth, 0, 0, WIDTH, HEIGHT, 1.15 + t * .009, .8);
+  ctx.fillStyle = '#0a192ee8'; ctx.fillRect(0, 0, WIDTH, HEIGHT); label(2, 'your mood, made visual');
+  text('Your mood.\nYour frame.', 65, 165, 70, '#fff', 600);
+  const entrance = ease(t / 1.3);
+  ctx.save(); ctx.globalAlpha = entrance;
+  frame(485, 205 + (1 - entrance) * 85, 425, 540, ease((t - 1.8) / 2.2), mix(.07, -.045, entrance)); ctx.restore();
+  ctx.fillStyle = '#1d3148'; ctx.fillRect(65, 485, 355, 170);
+  text('your frame prompt', 87, 510, 12, '#a8c5e5', 400, true);
+  const prompt = 'a warm evening,\na touch of gold.';
+  text(prompt.slice(0, Math.floor(clamp(t / 1.8) * prompt.length)), 87, 548, 28, '#fff', 500);
+  ctx.fillStyle = '#679fff'; ctx.fillRect(87, 629, 308 * ease((t - 1.2) / 2), 2);
+  text('scan · describe · create', 65, 737, 14, '#d7dee3', 400, true);
+}
+
+function keep(t) {
+  if (t < 3.7) {
+    photo(assets.guests, 0, 0, WIDTH, HEIGHT, 1.05 + t * .01, .45); shade(.8); label(3, 'the good kind of forever');
+    text('Make a moment.\nKeep it.', 65, 158, 66, '#fff', 600);
+    const p = ease(t / 1.7);
+    frame(345, 305 + (1 - p) * 320, 480, 440, 1, mix(.08, -.06, p));
+    text('a printed keepsake. a memory to share.', 65, 737, 14, '#d7dee3', 400, true);
+  } else {
+    const p = t - 3.7;
+    photo(assets.booth, 0, 0, WIDTH, HEIGHT, 1.025 + p * .012, .98); shade(.85);
+    ctx.drawImage(assets.logo, 65, 145, 330, 330 * assets.logo.height / assets.logo.width);
+    text('Less posing.\nMore personality.', 65, 430, 66, '#fff', 600);
+    text('meet your moment.', 65, 705, 21, '#fff', 400);
+    ctx.fillStyle = '#ff8b24'; ctx.fillRect(65, 758, 45, 3);
+    text('magicbooth / by aibox', 65, 737, 13, '#d7dee3', 400, true);
+    ctx.fillStyle = `rgba(8,17,23,${(1 - clamp(p / .4)) * .7})`; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  }
+}
+
+window.renderFrame = time => {
+  ctx.setTransform(1.28, 0, 0, 1.28, 0, 0); ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  const chapter = Math.min(2, Math.floor(time / 6)), local = time - chapter * 6;
+  [wave, create, keep][chapter](local);
+  // A short dip between chapters gives the film a deliberate editorial rhythm.
+  const dip = Math.max(0, 1 - local / .35, 1 - (6 - local) / .35);
+  if (time > .35 && time < DURATION - .35) {
+    ctx.fillStyle = `rgba(7,15,24,${dip * .85})`; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  }
+  return canvas.toDataURL('image/jpeg', .94).split(',')[1];
+};
+window.ready.then(() => window.renderFrame(.8));
+</script>
+</html>
