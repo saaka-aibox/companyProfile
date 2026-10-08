@@ -3,7 +3,7 @@
 import { ArrowUpRight, Check, CircleAlert } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
-const FORM_ENDPOINT = "https://formspree.io/f/xyzzypra";
+const FORM_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || "https://formspree.io/f/xyzzypra";
 
 type Feedback = { type: "success" | "error"; message: string };
 type FormspreeError = { errors?: { message?: string }[] };

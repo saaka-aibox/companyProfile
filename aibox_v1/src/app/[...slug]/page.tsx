@@ -4,12 +4,14 @@ import { Footer } from "../../components/layout/footer";
 import { Header } from "../../components/layout/header";
 import { BlockRenderer } from "../../lib/block-renderer";
 import { getPage } from "../../lib/content-api";
+import { isCmsEnabled } from "../../lib/site-config";
 
 export const instant = false;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
+  if (!isCmsEnabled()) notFound();
   const slug = paramsToSlug(await params);
-  const page = await getPage(slug);
+  const page = await loadPage(slug);
   return { title: page.title, description: page.description };
 }
 
@@ -25,6 +27,7 @@ async function loadPage(slug: string) {
 }
 
 export default async function ContentPage({ params }: { params: Promise<{ slug: string[] }> }) {
+  if (!isCmsEnabled()) notFound();
   const slug = paramsToSlug(await params);
   const page = await loadPage(slug);
   return (

@@ -3,7 +3,8 @@ import { stopGestureProcess } from "../../../../lib/gesture-process";
 import { withApiLogging } from "../../../../lib/logger";
 
 async function handler() {
-  return NextResponse.json(stopGestureProcess());
+  const status = stopGestureProcess();
+  return NextResponse.json(status, { status: status.supported ? 200 : 503 });
 }
 
 export const POST = withApiLogging(async () => handler(), "GestureAPI");

@@ -21,7 +21,10 @@ let lastError: string | null = null;
 let lastOutput: string | null = null;
 
 export function getGestureStatus() {
+  const supported = process.env.VERCEL !== "1" && process.env.LOCAL_GESTURE_BRIDGE_ENABLED === "true";
+  if (!supported) return { supported: false, running: false, error: "Desktop gesture bridge is disabled. Use browser hand controls on /playground." };
   return {
+    supported: true,
     running: gestureProcess !== null && gestureProcess.exitCode === null,
     error: lastError ?? lastOutput,
     pythonPath,
@@ -31,7 +34,7 @@ export function getGestureStatus() {
 export function startGestureProcess() {
   const status = getGestureStatus();
 
-  if (status.running) {
+  if (!status.supported || status.running) {
     return status;
   }
 
@@ -48,7 +51,7 @@ export function startGestureProcess() {
     {
     cwd: path.dirname(scriptPath),
     stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: false,
+    windowsHide: true,
     },
   );
 
@@ -75,6 +78,8 @@ export function startGestureProcess() {
 }
 
 export function stopGestureProcess() {
+  const status = getGestureStatus();
+  if (!status.supported) return status;
   if (gestureProcess && gestureProcess.exitCode === null) {
     gestureProcess.kill();
   }

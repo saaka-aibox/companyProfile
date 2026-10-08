@@ -4,6 +4,7 @@ import { withApiLogging } from "../../../../lib/logger";
 
 async function handler() {
   const status = startGestureProcess();
+  if (!status.supported) return NextResponse.json(status, { status: 503 });
 
   if (status.error) {
     return NextResponse.json(status, { status: 500 });

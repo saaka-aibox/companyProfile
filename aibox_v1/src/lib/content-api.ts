@@ -3,8 +3,9 @@ import { parseNavigation } from "../schemas/navigation";
 import type { Page } from "../types/content";
 import type { Navigation } from "../types/content";
 import { fetchWithLogging } from "./logger";
+import { isCmsEnabled } from "./site-config";
 
-const apiUrl = process.env.CONTENT_API_URL ?? "http://localhost:3000/api/v1";
+const apiUrl = process.env.CONTENT_API_URL?.trim().replace(/\/$/, "");
 
 const fallbackPage: Page = {
   slug: "home",
@@ -179,6 +180,10 @@ const fallbackNavigation: Navigation = {
 };
 
 async function requestPage(slug: string, preview = false): Promise<Page> {
+  if (!isCmsEnabled()) {
+    if (slug === "home") return fallbackPage;
+    throw new Error("Content API returned 404: CMS is disabled");
+  }
   const url = `${apiUrl}/pages/${encodeURIComponent(slug)}${preview ? "?preview=true" : ""}`;
 
   try {
@@ -200,6 +205,7 @@ export const getPage = (slug: string, preview = false) =>
   requestPage(slug, preview);
 
 export async function getNavigation(): Promise<Navigation> {
+  if (!isCmsEnabled()) return fallbackNavigation;
   try {
     const response = await fetchWithLogging(`${apiUrl}/navigation`, { next: { revalidate: 60, tags: ["navigation"] } }, "NavigationAPI");
     if (!response.ok) return fallbackNavigation;
