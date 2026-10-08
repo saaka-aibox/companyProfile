@@ -7,12 +7,13 @@ import { getPage } from "../../lib/content-api";
 
 export const instant = false;
 
-export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
-  const page = await getPage(paramsToSlug(await params));
+export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
+  const slug = paramsToSlug(await params);
+  const page = await getPage(slug);
   return { title: page.title, description: page.description };
 }
 
-function paramsToSlug(params: { slug?: string[] }) { return params.slug?.join("/") || "home"; }
+function paramsToSlug(params: { slug: string[] }) { return params.slug.join("/"); }
 
 async function loadPage(slug: string) {
   try {
@@ -23,8 +24,9 @@ async function loadPage(slug: string) {
   }
 }
 
-export default async function ContentPage({ params }: { params: Promise<{ slug?: string[] }> }) {
-  const page = await loadPage(paramsToSlug(await params));
+export default async function ContentPage({ params }: { params: Promise<{ slug: string[] }> }) {
+  const slug = paramsToSlug(await params);
+  const page = await loadPage(slug);
   return (
     <>
       <Header />

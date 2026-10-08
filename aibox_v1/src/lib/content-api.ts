@@ -9,19 +9,19 @@ const apiUrl = process.env.CONTENT_API_URL ?? "http://localhost:3000/api/v1";
 const fallbackPage: Page = {
   slug: "home",
   title: "AIBOX - AI-Powered Photobooth Experience",
-  description: "The world's first AI-powered photobooth with gesture control — built for effortless, unforgettable moments.",
+  description: "An AI photobooth that turns a simple gesture into a signature event experience, with cinematic capture, instant prints, and digital sharing.",
   blocks: [
     {
       type: "hero",
       eyebrow: "✦ AI-Powered Photo Experience",
-      title: "Capture Your Essence, Elevated by aibox.",
-      body: "The world's first AI-powered photobooth with gesture control — built for effortless, unforgettable moments.",
-      cta: { label: "Book now", href: "#pricing", style: { variant: "primary", size: "medium" } },
+      title: "Capture Your Essence, Elevated by AIBOX.",
+      body: "An AI photobooth that turns a simple gesture into a signature event experience, with cinematic capture, instant prints, and digital sharing.",
+      cta: { label: "Try the playground", href: "#playground", style: { variant: "primary", size: "medium" } },
       secondaryCta: { label: "Our product ↗", href: "#product", style: { variant: "outline", size: "medium" } },
       stats: [
-        { value: "500+", label: "events" },
-        { value: "10K+", label: "captures" },
-        { value: "99%", label: "happy clients" },
+        { value: "0 touch", label: "to begin" },
+        { value: "1 gesture", label: "to capture" },
+        { value: "Instant", label: "print and share" },
       ],
       layout: "centered",
     },
@@ -31,7 +31,7 @@ const fallbackPage: Page = {
       title: "We Redefine the Photobooth Experience",
       body: "Step into the future of event photography. AIBOX merges cutting-edge artificial intelligence with sleek hardware design to create photobooth moments that are spontaneous, personal, and endlessly shareable.",
       cta: { label: "Our Story", href: "#about", style: { variant: "outline", size: "medium" } },
-      secondaryCta: { label: "Watch Demo", href: "#demo", style: { variant: "dark", size: "medium" } },
+      secondaryCta: { label: "Try the playground", href: "#playground", style: { variant: "dark", size: "medium" } },
       imagePosition: "right",
       layout: "split",
     },
@@ -42,7 +42,7 @@ const fallbackPage: Page = {
       subtitle: "Touch-free capture, instant magic.",
       body: "Engineered from the ground up for seamless events. Intuitive gesture controls let guests interact naturally, while AI image enhancements deliver studio-quality prints and instant digital delivery.",
       tags: ["AI Gesture", "Instant Print", "Custom Frame Themes", "Cloud Gallery"],
-      cta: { label: "Explore Specs", href: "#specs", style: { variant: "primary", size: "medium" } },
+      cta: { label: "Try hand control", href: "#playground", style: { variant: "primary", size: "medium" } },
       imagePosition: "right",
       layout: "split",
     },
@@ -78,13 +78,13 @@ const fallbackPage: Page = {
     },
     {
       type: "gallery",
-      eyebrow: "✦ Real Events",
-      title: "Captured Moments",
-      subtitle: "Every celebration tells a unique story through our smart lenses",
+      eyebrow: "AIBOX / Experience Gallery",
+      title: "Find Your Event Look",
+      subtitle: "Explore a few visual directions for your MagicBooth experience.",
       columns: 3,
       layout: "grid",
       items: [
-        { title: "Retro Fits", tone: "gold", tag: "Vintage Aesthetic", description: "Warm nostalgic glow and grain" },
+        { title: "Event Night", image: "/images/aibox-event-moment.webp", tone: "gold", tag: "Sample experience", description: "Touch-free portraits in a warm setting" },
         { title: "Neon Nights", tone: "purple", tag: "Cyberpunk", description: "Vibrant electric neon palette" },
         { title: "Golden Hour", tone: "gold", tag: "Sunset Mood", description: "Sun-drenched natural warmth" },
         { title: "Minimal White", tone: "blue", tag: "Editorial Clean", description: "Studio lighting and high contrast" },
@@ -111,8 +111,8 @@ const fallbackPage: Page = {
           answer: "Weddings, brand activations, birthdays, launches, corporate events, and any celebration worth remembering.",
         },
         {
-          question: "Do you ship the machine internationally?",
-          answer: "Yes. We support events and installations internationally with delivery and setup options available.",
+          question: "Where can MagicBooth be installed?",
+          answer: "Contact the AIBOX team to confirm delivery, installation, and support options for your location.",
         },
         {
           question: "What is included with the purchase?",
@@ -123,13 +123,13 @@ const fallbackPage: Page = {
     {
       type: "pricing",
       eyebrow: "✦ Flexible Investment",
-      title: "Own Your aibox",
+      title: "Choose Your MagicBooth",
       subtitle: "Choose the package that fits your event venue or rental business",
       layout: "grid",
       plans: [
         {
           name: "Starter",
-          price: "1000,00",
+          price: "Rp 80 jt",
           period: "/ unit",
           description: "Ideal for boutique venues and private gatherings.",
           features: ["1 MagicBooth unit", "Up to 500 captures", "Standard support", "Basic theme pack"],
@@ -138,7 +138,7 @@ const fallbackPage: Page = {
         },
         {
           name: "Pro",
-          price: "2000,00",
+          price: "Rp 100 jt",
           period: "/ unit",
           badge: "POPULAR",
           description: "Best for high-traffic event planners and venues.",
@@ -148,8 +148,7 @@ const fallbackPage: Page = {
         },
         {
           name: "Business",
-          price: "3000,00",
-          period: "/ unit",
+          price: "Custom",
           badge: "ENTERPRISE",
           description: "Built for rental enterprises and global brand activations.",
           features: ["2 MagicBooth units", "Unlimited captures", "Custom event branding", "Dedicated support", "Hardware warranty"],
@@ -171,7 +170,8 @@ const fallbackNavigation: Navigation = {
   items: [
     { label: "Product", href: "#product" },
     { label: "Features", href: "#features" },
-    { label: "Moments", href: "#moments" },
+    { label: "Gallery", href: "#gallery" },
+    { label: "Playground", href: "#playground" },
     { label: "FAQ", href: "#faq" },
     { label: "Pricing", href: "#pricing" },
     { label: "Contact", href: "#contact" },

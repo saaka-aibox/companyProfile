@@ -39,10 +39,7 @@ export function FeatureGrid(block: Block & { type: "featureGrid" }) {
       </div>
 
       {/* Feature cards */}
-      <div
-        className="feature-grid"
-        style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-      >
+      <div className={`feature-grid cols-${columns}`}>
         {block.features.map((feature, i) => (
           <article key={i} className="feature-card">
             {feature.image ? (

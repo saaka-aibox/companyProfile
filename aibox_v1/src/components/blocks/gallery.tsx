@@ -25,7 +25,7 @@ export function Gallery(block: Block & { type: "gallery" }) {
   const hasMoments = titleText.includes("Moments");
 
   return (
-    <section id="moments" className="section-shell" style={s}>
+    <section id="gallery" className="section-shell" style={s}>
       <div className="center-heading">
         {block.eyebrow && <p className="section-kicker">{block.eyebrow}</p>}
         <h2>
@@ -44,37 +44,19 @@ export function Gallery(block: Block & { type: "gallery" }) {
       <div className="moments-grid">
         {block.items.map((item, index) => {
           const toneClass = item.tone ? ` ${item.tone}` : "";
+          const image = item.image || (index === 0 ? "/images/aibox-event-moment.webp" : undefined);
           return (
-            <article key={index} className={`moment-card${toneClass}`}>
+            <article key={index} className={`moment-card${toneClass}${image ? " has-photo" : ""}`}>
               <div className="moment-photo photo-placeholder">
-                {item.image ? (
+                {image ? (
                   <img
-                    src={item.image}
+                    src={image}
                     alt={item.title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "0.3rem" }}
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      position: "relative",
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        backgroundImage: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.05) 75%), linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.05) 75%)",
-                        backgroundSize: "20px 20px",
-                        opacity: 0.4,
-                      }}
-                    />
-                    <span style={{ fontSize: "1.2rem", fontWeight: 700, opacity: 0.85 }}>{item.title}</span>
-                  </div>
+                  <span className="moment-art-title">{item.title}</span>
                 )}
               </div>
               <div className="moment-meta">

@@ -40,23 +40,15 @@ export function Hero(block: Block & { type: "hero" }) {
 
   return (
     <section className="hero section-shell" id="top" style={s}>
-      <div className="hero-orb hero-orb-left" aria-hidden="true" />
-      <div className="hero-orb hero-orb-right" aria-hidden="true" />
-
-      {block.backgroundImage && (
-        <div
-          className="hero-bg"
-          style={{
-            backgroundImage: `url(${block.backgroundImage})`,
-            position: "absolute",
-            inset: 0,
-            zIndex: 0,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: 0.35,
-          }}
-        />
-      )}
+      <img
+        className="hero-image"
+        src={block.backgroundImage || "/images/aibox-photobooth-hero.webp"}
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+      />
 
       <div className="hero-content">
         {block.eyebrow && <p className="section-kicker">{block.eyebrow}</p>}
@@ -90,12 +82,6 @@ export function Hero(block: Block & { type: "hero" }) {
         )}
       </div>
 
-      <div className="hero-booth hero-booth-left" aria-hidden="true">
-        AI<br /><b>BOX</b>
-      </div>
-      <div className="hero-booth hero-booth-right" aria-hidden="true">
-        AI<br /><b>BOX</b>
-      </div>
     </section>
   );
 }

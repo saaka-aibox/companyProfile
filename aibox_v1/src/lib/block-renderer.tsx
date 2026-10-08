@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from "react";
 import type { Block } from "../types/content";
 import { Cta } from "../components/blocks/cta";
 import { ContactForm } from "../components/blocks/contact-form";
@@ -10,33 +11,54 @@ import { Story } from "../components/blocks/story";
 import { Testimonials } from "../components/blocks/testimonials";
 import { Faq } from "../components/blocks/faq";
 import { Gallery } from "../components/blocks/gallery";
+import { GesturePlayground } from "../components/landing/GesturePlayground";
 
-export function BlockRenderer({ blocks }: { blocks: Block[] }) {
+export function BlockRenderer({ blocks, showPlayground = false }: { blocks: Block[]; showPlayground?: boolean }) {
+  const firstHeroIndex = blocks.findIndex((block) => block.type === "hero");
+
   return blocks.map((block, index) => {
     const key = `${block.type}-${index}`;
+    let content: ReactNode = null;
     switch (block.type) {
       case "hero":
-        return <Hero key={key} {...block} />;
+        content = <Hero {...block} />;
+        break;
       case "featureGrid":
-        return <FeatureGrid key={key} {...block} />;
+        content = <FeatureGrid {...block} />;
+        break;
       case "cta":
-        return <Cta key={key} {...block} />;
+        content = <Cta {...block} />;
+        break;
       case "contactForm":
-        return <ContactForm key={key} {...block} />;
+        content = <ContactForm {...block} />;
+        break;
       case "testimonials":
-        return <Testimonials key={key} {...block} />;
+        content = <Testimonials {...block} />;
+        break;
       case "pricing":
-        return <Pricing key={key} {...block} />;
+        content = <Pricing {...block} />;
+        break;
       case "stats":
-        return <Stats key={key} {...block} />;
+        content = <Stats {...block} />;
+        break;
       case "story":
-        return <Story key={key} {...block} />;
+        content = <Story {...block} />;
+        break;
       case "gallery":
-        return <Gallery key={key} {...block} />;
+        content = <Gallery {...block} />;
+        break;
       case "faq":
-        return <Faq key={key} {...block} />;
+        content = <Faq {...block} />;
+        break;
       case "divider":
-        return <Divider key={key} {...block} />;
+        content = <Divider {...block} />;
+        break;
     }
+    return (
+      <Fragment key={key}>
+        {content}
+        {showPlayground && index === firstHeroIndex && <GesturePlayground />}
+      </Fragment>
+    );
   });
 }

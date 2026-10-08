@@ -1,109 +1,64 @@
+import type { CSSProperties } from "react";
 import type { Block, ButtonStyle } from "../../types/content";
+import { ContactEnquiryForm } from "./ContactEnquiryForm";
 
-function getStyle(block: Block) {
-  const style: React.CSSProperties & Record<string, string | undefined> = {};
-  if (block.colorScheme) {
-    if (block.colorScheme.background) style.backgroundColor = block.colorScheme.background;
-    if (block.colorScheme.text) style.color = block.colorScheme.text;
-    if (block.colorScheme.accent) style["--accent"] = block.colorScheme.accent;
-    if (block.colorScheme.border) style.borderColor = block.colorScheme.border;
-  }
-  if (block.spacing) {
-    if (block.spacing.paddingTop) style.paddingTop = block.spacing.paddingTop;
-    if (block.spacing.paddingBottom) style.paddingBottom = block.spacing.paddingBottom;
-    if (block.spacing.paddingLeft) style.paddingLeft = block.spacing.paddingLeft;
-    if (block.spacing.paddingRight) style.paddingRight = block.spacing.paddingRight;
-    if (block.spacing.gap) style.gap = block.spacing.gap;
-  }
+type ContactBlock = Block & { type: "contactForm" };
+
+function getSectionStyle(block: ContactBlock): CSSProperties & Record<string, string | undefined> {
+  const style: CSSProperties & Record<string, string | undefined> = {};
+  const { colorScheme, spacing } = block;
+
+  if (colorScheme?.background) style.backgroundColor = colorScheme.background;
+  if (colorScheme?.text) style.color = colorScheme.text;
+  if (colorScheme?.accent) style["--accent"] = colorScheme.accent;
+  if (spacing?.paddingTop) style.paddingTop = spacing.paddingTop;
+  if (spacing?.paddingBottom) style.paddingBottom = spacing.paddingBottom;
+  if (spacing?.paddingLeft) style.paddingLeft = spacing.paddingLeft;
+  if (spacing?.paddingRight) style.paddingRight = spacing.paddingRight;
   return style;
 }
 
 function getButtonClass(style?: ButtonStyle) {
-  const variant = style?.variant || "primary";
-  const size = style?.size || "medium";
-  const classes = ["button"];
-  if (variant !== "primary") classes.push(`button-${variant}`);
-  if (size !== "medium") classes.push(`button-${size}`);
-  return classes.join(" ");
+  const variant = style?.variant ?? "primary";
+  const size = style?.size ?? "medium";
+  return ["button", variant !== "primary" && `button-${variant}`, size !== "medium" && `button-${size}`]
+    .filter(Boolean)
+    .join(" ");
 }
 
-export function ContactForm(block: Block & { type: "contactForm" }) {
-  const s = getStyle(block);
-  const action = block.email ? `mailto:${block.email}` : "mailto:contact@aibox.id";
-
-  const titleText = block.title || "Ready to Experience MagicBooth?";
-  const hasMagicBooth = titleText.includes("MagicBooth");
+export function ContactForm(block: ContactBlock) {
+  const email = block.email || "contact@aibox.id";
 
   return (
-    <section id="contact" className="contact section-shell" style={s}>
-      <div className="center-heading">
-        <p className="section-kicker">✦ Let&apos;s Connect</p>
-        <h2>
-          {hasMagicBooth ? (
-            <>
-              {titleText.replace("MagicBooth?", "").replace("MagicBooth", "")}
-              <span style={{ color: "var(--orange)" }}>MagicBooth?</span>
-            </>
-          ) : (
-            titleText
-          )}
-        </h2>
+    <section id="contact" className="contact-section section-shell" style={getSectionStyle(block)}>
+      <div className="contact-heading">
+        {block.title && (
+          <h2>
+            {block.title.includes("MagicBooth") ? (
+              <>{block.title.replace("MagicBooth", "")}<span>MagicBooth</span></>
+            ) : block.title}
+          </h2>
+        )}
         {block.subtitle && <p>{block.subtitle}</p>}
       </div>
 
       <div className="contact-layout">
-        <div className="contact-details">
-          <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "white" }}>AIBOX Studio &amp; Experience</h3>
-          <p style={{ lineHeight: 1.8, marginBottom: "1.5rem" }}>
-            Experience the future of event photobooths in person or arrange a virtual demo with our product team.
-          </p>
-          <div style={{ display: "grid", gap: "1rem" }}>
-            <div>
-              <strong style={{ color: "white", display: "block", fontSize: "0.8rem" }}>📍 Headquarter</strong>
-              <span>Jakarta, Indonesia</span>
-            </div>
-            <div>
-              <strong style={{ color: "white", display: "block", fontSize: "0.8rem" }}>✉️ Direct Inquiries</strong>
-              <span>{block.email || "contact@aibox.id"}</span>
-            </div>
-            <div>
-              <strong style={{ color: "white", display: "block", fontSize: "0.8rem" }}>⏰ Business Hours</strong>
-              <span>Mon - Fri: 09:00 - 18:00 WIB</span>
-            </div>
+        <aside className="contact-details" aria-label="Contact details">
+          <div className="contact-detail-card">
+            <span className="contact-detail-label">EMAIL</span>
+            <a href={`mailto:${email}`}>{email}</a>
           </div>
-
-          <div className="gesture-control">
-            <div className="gesture-status is-active">
-              <span />
-              <strong style={{ color: "white", fontSize: "0.75rem" }}>AI Gesture Engine Online</strong>
-            </div>
-            <small style={{ color: "var(--muted)", fontSize: "0.65rem", display: "block", marginTop: "0.4rem" }}>
-              MediaPipe Gesture Recognition Active &amp; Tested
-            </small>
+          <div className="contact-detail-card">
+            <span className="contact-detail-label">PRODUCT</span>
+            <strong>MagicBooth by AIBOX</strong>
           </div>
-        </div>
+          <a className="contact-detail-card contact-playground-link" href="#playground">
+            <span className="contact-detail-label">TRY IT FIRST</span>
+            <strong>Explore the gesture playground <span aria-hidden="true">↗</span></strong>
+          </a>
+        </aside>
 
-        <form className="contact-form" action={action} method="post" encType="text/plain">
-          <label>
-            Full Name
-            <input name="name" required placeholder="John Doe" />
-          </label>
-          <label>
-            Email Address
-            <input name="email" type="email" required placeholder="john@example.com" />
-          </label>
-          <label>
-            Event Type / Package
-            <input name="subject" placeholder="Wedding / Corporate / Pro Plan" />
-          </label>
-          <label>
-            Message / Details
-            <textarea name="message" rows={4} required placeholder="Tell us about your event date, location, or unit requirements..." />
-          </label>
-          <button className={`button ${getButtonClass(block.buttonStyle)}`} type="submit">
-            Send Inquiry
-          </button>
-        </form>
+        <ContactEnquiryForm email={email} buttonClass={getButtonClass(block.buttonStyle)} />
       </div>
     </section>
   );
