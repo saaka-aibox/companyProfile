@@ -33,6 +33,7 @@ SITE_URL=https://aibox-photo.com
 CMS_ENABLED=false
 LOCAL_GESTURE_BRIDGE_ENABLED=false
 NEXT_PUBLIC_FORMSPREE_ENDPOINT=https://formspree.io/f/xyzzypra
+WHATSAPP_NUMBER=085759040420
 ```
 
 | Variable | Purpose |
@@ -41,10 +42,13 @@ NEXT_PUBLIC_FORMSPREE_ENDPOINT=https://formspree.io/f/xyzzypra
 | `CMS_ENABLED` | Keep CMS pages and management endpoints disabled for the native profile |
 | `LOCAL_GESTURE_BRIDGE_ENABLED` | Disable the desktop Python controller; browser Playground gestures stay available |
 | `NEXT_PUBLIC_FORMSPREE_ENDPOINT` | Public endpoint used by the Connect form |
+| `WHATSAPP_NUMBER` | Connect booking number; local Indonesian `08…` numbers are converted to `628…` for WhatsApp |
 
 Keep `SITE_URL` pointed at the production domain in Preview too. Vercel Preview builds receive `noindex` metadata and a robots rule disallowing crawling. Vercel supplies `VERCEL` and `VERCEL_ENV`; do not create them manually. No database, OpenAI API key, Python executable, or CMS URL is needed for this public website.
 
 `NEXT_PUBLIC_` values are embedded at build time. Redeploy after changing the form endpoint or deployment environment. Existing local `.env.local` files are not uploaded by Git; Vercel uses values from its project settings. `.env.production.local` is prepared for local production use and stays ignored. In a production build, Next.js gives `.env.production.local` higher priority than `.env.local` and `.env`; shell/project environment variables take priority over all files. The development `.env` intentionally uses `http://localhost:3001`.
+
+`WHATSAPP_NUMBER` is read on the server when the Connect page is built, so it does not need a `NEXT_PUBLIC_` prefix. Add it to Vercel's Production and Preview environment variables, then redeploy after changing the number. Accepts `085759040420`, `6285759040420`, or `+6285759040420`. An absent or invalid value hides the WhatsApp link; the enquiry form and email link remain available.
 
 Source: [Vercel environment variables](https://vercel.com/docs/environment-variables), [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables).
 
@@ -71,7 +75,7 @@ Once Vercel reports the deployment and domain as ready, open:
 
 Check the home photo loop, card reviews, Gallery frame picker, theme toggle, product walkthrough, and isometric GLB venue preview with animated virtual guests. On `/playground`, select Enable camera and approve browser permission. Hand tracking downloads its MediaPipe runtime/model when enabled and runs on the visitor's device. If that download is blocked, the camera preview and drag/keyboard controls remain available.
 
-Confirm the Formspree form is active and its destination email is verified. If you configured Formspree domain restrictions, allow the production domain. A live form check sends an actual enquiry. WhatsApp opens the booking chat for `+6285759040420`.
+Confirm the Formspree form is active and its destination email is verified. If you configured Formspree domain restrictions, allow the production domain. A live form check sends an actual enquiry. WhatsApp opens the booking chat for the configured `WHATSAPP_NUMBER`.
 
 Source: [Formspree domain restrictions](https://help.formspree.io/articles/form-and-project-settings/restrict-to-domain/).
 

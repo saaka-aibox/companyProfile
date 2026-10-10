@@ -8,6 +8,7 @@ import { ExperienceWalkthrough } from "./profile/ExperienceWalkthrough";
 import { PhotoResultsCarousel } from "./profile/PhotoResultsCarousel";
 import { FrameExplorer } from "./profile/FrameExplorer";
 import { EventEnquiry } from "./profile/EventEnquiry";
+import { getWhatsAppBookingUrl } from "../../lib/whatsapp";
 
 export { nativePageMetadata } from "./profile/metadata";
 
@@ -34,7 +35,6 @@ const whatsappBookingMessage = [
   "",
   "Mohon informasi ketersediaan dan paket sewa. Terima kasih!",
 ].join("\n");
-const whatsappBookingUrl = `https://wa.me/6285759040420?text=${encodeURIComponent(whatsappBookingMessage)}`;
 
 function Hero() {
   return (
@@ -168,6 +168,8 @@ export function NativeGalleryPage() {
 }
 
 export function NativeConnectPage() {
+  const whatsappBookingUrl = getWhatsAppBookingUrl(whatsappBookingMessage);
+
   return (
     <ProfileShell>
       <PageIntro index="04" label="let’s connect" title={<>A great event starts<br /><span>with a conversation.</span></>}><p>A wedding, a launch, a corner of your venue. Tell us what you’re imagining.</p></PageIntro>
@@ -175,11 +177,11 @@ export function NativeConnectPage() {
         <div className="profile-connect-aside">
           <Eyebrow>Make it your moment</Eyebrow><h2>Big celebration.<br />Small gathering.<br /><span>All welcome.</span></h2>
           <p>Share a few details about your date, location, and guests. We’ll help you explore a setup that fits.</p>
-          <a className="profile-contact-whatsapp" href={whatsappBookingUrl} target="_blank" rel="noopener noreferrer" aria-label="Book AIBox via WhatsApp (opens in a new tab)">
+          {whatsappBookingUrl && <a className="profile-contact-whatsapp" href={whatsappBookingUrl} target="_blank" rel="noopener noreferrer" aria-label="Book AIBox via WhatsApp (opens in a new tab)">
             <span className="profile-contact-whatsapp-icon"><MessageCircle size={20} strokeWidth={1.8} aria-hidden="true" /></span>
             <span><small>Prefer to chat?</small><strong>Book via WhatsApp</strong></span>
             <ArrowUpRight size={18} aria-hidden="true" />
-          </a>
+          </a>}
           <a className="profile-contact-email" href="mailto:contact@aibox.id"><Mail size={19} aria-hidden="true" /><span>Prefer a simple email?<strong>contact@aibox.id</strong></span><ArrowUpRight size={17} aria-hidden="true" /></a>
           <div className="profile-connect-photo"><Image src="/bg.png" alt="AIBox at an event venue" width={1672} height={941} sizes="(max-width: 760px) 90vw, 440px" /></div>
         </div>
