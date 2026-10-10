@@ -6,7 +6,7 @@ Deploy the native public website in `aibox_v1`. The `manage_compro` application 
 
 ## 1. Import the GitHub repository
 
-Import `saakaaibox/compro` in Vercel and use these settings:
+Import [`saaka-aibox/companyProfile`](https://github.com/saaka-aibox/companyProfile) in Vercel and use these settings:
 
 | Setting | Value |
 | --- | --- |
@@ -16,9 +16,9 @@ Import `saakaaibox/compro` in Vercel and use these settings:
 | Install Command | `npm ci` |
 | Build Command | `npm run build` |
 | Output Directory | Framework default; leave Override off |
-| Production Branch | `ardit_dev`, which contains the current website |
+| Production Branch | `main` |
 
-If your Vercel project was imported from `main`, open **Settings → Environments → Production → Branch Tracking** and select `ardit_dev` before publishing this version. Keep the repository's two apps in separate Vercel projects if you deploy the CMS later.
+Confirm **Settings → Environments → Production → Branch Tracking** is set to `main`. Keep the repository's two apps in separate Vercel projects if you deploy the CMS later.
 
 Vercel reads the app's `vercel.json` after Root Directory is set. A catch-all rewrite to `/` is unnecessary: Next.js handles the five pages, API routes, image optimization, and 404s.
 
@@ -44,7 +44,7 @@ NEXT_PUBLIC_FORMSPREE_ENDPOINT=https://formspree.io/f/xyzzypra
 
 Keep `SITE_URL` pointed at the production domain in Preview too. Vercel Preview builds receive `noindex` metadata and a robots rule disallowing crawling. Vercel supplies `VERCEL` and `VERCEL_ENV`; do not create them manually. No database, OpenAI API key, Python executable, or CMS URL is needed for this public website.
 
-`NEXT_PUBLIC_` values are embedded at build time. Redeploy after changing the form endpoint or deployment environment. Existing local `.env.local` files are not uploaded by Git; Vercel uses values from its project settings. `.env.production.local` is prepared for local production use and stays ignored. Next.js gives `.env.local` higher priority than `.env.production.local`; shell/project environment variables take priority over both.
+`NEXT_PUBLIC_` values are embedded at build time. Redeploy after changing the form endpoint or deployment environment. Existing local `.env.local` files are not uploaded by Git; Vercel uses values from its project settings. `.env.production.local` is prepared for local production use and stays ignored. In a production build, Next.js gives `.env.production.local` higher priority than `.env.local` and `.env`; shell/project environment variables take priority over all files. The development `.env` intentionally uses `http://localhost:3001`.
 
 Source: [Vercel environment variables](https://vercel.com/docs/environment-variables), [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables).
 
@@ -69,7 +69,7 @@ Once Vercel reports the deployment and domain as ready, open:
 - `/robots.txt` and `/sitemap.xml` (production URLs should use `aibox-photo.com`)
 - A nonexistent page (should return 404 without a localhost CMS fetch)
 
-Check the home photo loop, card reviews, Gallery frame picker, theme toggle, product walkthrough, and GLB venue preview. On `/playground`, select Enable camera and approve browser permission. Hand tracking downloads its MediaPipe runtime/model when enabled and runs on the visitor's device. If that download is blocked, the camera preview and drag/keyboard controls remain available.
+Check the home photo loop, card reviews, Gallery frame picker, theme toggle, product walkthrough, and isometric GLB venue preview with animated virtual guests. On `/playground`, select Enable camera and approve browser permission. Hand tracking downloads its MediaPipe runtime/model when enabled and runs on the visitor's device. If that download is blocked, the camera preview and drag/keyboard controls remain available.
 
 Confirm the Formspree form is active and its destination email is verified. If you configured Formspree domain restrictions, allow the production domain. A live form check sends an actual enquiry. WhatsApp opens the booking chat for `+6285759040420`.
 

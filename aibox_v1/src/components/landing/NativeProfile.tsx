@@ -193,7 +193,7 @@ export function NativeConnectPage() {
 export function NativePlaygroundPage() {
   return (
     <ProfileShell>
-      <PageIntro index="05" label="the playground" title={<>Curiosity looks<br /><span>good on you.</span></>}><p>Explore the AIBox model in different settings. Drag to rotate, or pinch with your hand to take control.</p></PageIntro>
+      <PageIntro index="05" label="the playground" title={<>Curiosity looks<br /><span>good on you.</span></>}><p>A little world around your next moment. Explore AIBox in animated, isometric venues. Drag to rotate, or pinch with your hand to take control.</p></PageIntro>
       <GesturePlayground showHeading={false} />
       <section className="profile-play-guide profile-container" data-reveal aria-label="Playground controls">
         {[

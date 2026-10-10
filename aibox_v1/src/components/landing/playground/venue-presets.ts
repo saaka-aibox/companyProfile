@@ -1,8 +1,8 @@
 export const venuePresets = [
-  { id: "studio", name: "Studio", description: "A clean view of the booth.", image: null, rotation: 0, light: "#e6f1ff", atmosphere: "none" },
-  { id: "wedding", name: "Wedding", description: "Chandelier light, a ballroom, and a little celebration.", image: "/environments/ballroom.webp", rotation: 1.1, light: "#ffe3ba", atmosphere: "petals" },
-  { id: "coffee", name: "Coffee shop", description: "A warm hospitality setting for everyday moments.", image: "/environments/bush_restaurant.webp", rotation: 2.6, light: "#ffd6ad", atmosphere: "dust" },
-  { id: "launch", name: "Creative launch", description: "An airy studio setting for a brand gathering.", image: "/environments/photo_studio_broadway_hall.webp", rotation: -.5, light: "#e2edff", atmosphere: "lights" },
+  { id: "studio", name: "Studio", description: "An open studio. A few guests, one good moment.", guests: 4, light: "#edf4ff" },
+  { id: "wedding", name: "Wedding", description: "A garden celebration, with guests finding their way to the booth.", guests: 6, light: "#fff0db" },
+  { id: "coffee", name: "Coffee shop", description: "Coffee, conversation, and a photo to take away.", guests: 5, light: "#ffeddb" },
+  { id: "launch", name: "Creative launch", description: "A small gathering with room for a big idea.", guests: 6, light: "#e7eeff" },
 ] as const;
 
 export type VenueId = typeof venuePresets[number]["id"];

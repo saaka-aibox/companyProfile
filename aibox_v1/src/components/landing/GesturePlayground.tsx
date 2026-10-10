@@ -3,7 +3,8 @@
 import type { GestureRecognizerResult } from "@mediapipe/tasks-vision";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { Camera, Hand, Move3d, RotateCcw, MapPin, Pause, Play } from "lucide-react";
+import { Camera, Hand, Move3d, RotateCcw, MapPin, Pause, Play, Plus, Minus, Users, Box } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent, type KeyboardEvent } from "react";
 import { useGestureCamera, type CameraMode } from "./useGestureCamera";
 import { createPinchRotation } from "./playground/pinch-rotation";
@@ -43,6 +44,7 @@ function playgroundGuide(mode: CameraMode, detected: boolean, hasRotated: boolea
 }
 
 export function GesturePlayground({ showHeading = true }: { showHeading?: boolean }) {
+  const { resolvedTheme } = useTheme();
   const previousGestureRef = useRef<string | null>(null);
   const pointerRef = useRef<{ x: number; y: number; pose: Pose } | null>(null);
   const pinchRef = useRef(createPinchRotation());
@@ -58,6 +60,7 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
   const [pinching, setPinching] = useState(false);
   const [venue, setVenue] = useState<VenueId>("wedding");
   const [ambientMotion, setAmbientMotion] = useState(true);
+  const [zoom, setZoom] = useState(1);
   const [hasRotated, setHasRotated] = useState(false);
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeTheme = themes.find((item) => item.id === theme) ?? themes[0]!;
@@ -179,7 +182,7 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
   }, []);
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0) return;
+    if (!event.isPrimary || event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
     pinchRef.current.reset();
     pointerRef.current = { x: event.clientX, y: event.clientY, pose: poseRef.current };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -195,6 +198,7 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
   }
 
   function resetView() {
+    setZoom(1);
     pinchRef.current.reset();
     setPinching(false);
     applyPose({ x: 0, y: 0 });
@@ -202,6 +206,7 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
   }
 
   function onStageKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
     const current = poseRef.current;
     const changes: Record<string, { x: number; y: number }> = {
       ArrowLeft: { x: -8, y: 0 }, ArrowRight: { x: 8, y: 0 },
@@ -219,7 +224,7 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
   }
 
   return (
-    <section className={`gesture-playground section-shell${flash && mode === "ready" ? " is-flashing" : ""}`} id="playground" aria-label="Interactive MagicBooth playground">
+    <section className={`gesture-playground section-shell${flash && mode === "ready" ? " is-flashing" : ""}`} id="playground" aria-label="Interactive AIBox playground">
       {showHeading && <div className="playground-heading">
         <div>
           <p className="section-kicker">A closer look · interactive demo</p>
@@ -246,15 +251,23 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
             role="group"
             aria-label="Interactive AIBox model. Drag, use arrow keys, or enable the camera and pinch to rotate. Press Home to recenter."
           >
-            <div className="stage-grid" aria-hidden="true" />
-            <div className="stage-orbit stage-orbit-one" aria-hidden="true" />
-            <div className="stage-orbit stage-orbit-two" aria-hidden="true" />
-            <div className="stage-caption"><span>{activeVenue.name} / venue preview</span><span>{modelStatus === "ready" ? "3D MODEL" : modelStatus === "loading" ? "LOADING MODEL…" : "PHOTO PREVIEW"}</span></div>
+            <div className="stage-caption">
+              <span><i aria-hidden="true" />{activeVenue.name}<small>isometric / concept scene</small></span>
+              <span>{modelStatus === "ready" ? "3D LIVE" : modelStatus === "loading" ? "LOADING…" : "PHOTO PREVIEW"}</span>
+            </div>
+            <div className="scene-summary" aria-label="Concept scene overview">
+              <span><Box size={16} aria-hidden="true" /><span><small>the booth</small><strong>AIBox</strong></span></span>
+              <span><Users size={16} aria-hidden="true" /><span><small>virtual guests</small><strong>{activeVenue.guests.toString().padStart(2, "0")}</strong></span></span>
+            </div>
+            <div className="scene-view-controls" role="group" aria-label="Scene view">
+              <button type="button" onClick={() => setZoom(value => Math.min(1.6, +(value + .15).toFixed(2)))} disabled={zoom >= 1.6} aria-label="Zoom in"><Plus size={16} aria-hidden="true" /></button>
+              <button type="button" onClick={() => setZoom(value => Math.max(.8, +(value - .15).toFixed(2)))} disabled={zoom <= .8} aria-label="Zoom out"><Minus size={16} aria-hidden="true" /></button>
+              <button type="button" onClick={resetView} aria-label="Reset scene view"><RotateCcw size={15} aria-hidden="true" /></button>
+            </div>
             {modelStatus !== "ready" && <div className="playground-model-fallback"><Image src="/bg.png" alt="AIBox booth reference while the 3D model loads" fill sizes="(max-width: 760px) 100vw, 800px" /><span role="status">{modelStatus === "loading" ? "Loading the booth…" : modelStatus === "unsupported" ? "3D is unavailable in this browser. Explore the product photo instead." : "The 3D model couldn’t load. Refresh to try again."}</span></div>}
-            {visualsActive && <ThreeBoothScene poseRef={poseRef} accent={activeTheme.accent} venue={venue} ambientMotion={ambientMotion} onStatus={markModelStatus} />}
-            {visualsActive && <PixiGestureOverlay accent={activeTheme.accent} venue={venue} ambientMotion={ambientMotion} />}
+            {visualsActive && <ThreeBoothScene poseRef={poseRef} accent={activeTheme.accent} venue={venue} ambientMotion={ambientMotion} dark={resolvedTheme === "dark"} zoom={zoom} onStatus={markModelStatus} />}
+            {visualsActive && <PixiGestureOverlay accent={activeTheme.accent} />}
             <div className="stage-hint"><Move3d size={14} aria-hidden="true" />{mode === "ready" && pinching ? "Grip held · move to rotate" : mode === "ready" ? "Pinch to grab · release to let go" : "Drag to explore · arrow keys work too"}</div>
-            <div className="stage-light" aria-hidden="true" />
           </div>
           <div className="playground-coach" key={guide.step} aria-live="polite">
             <span>{guide.step}</span>
@@ -266,10 +279,10 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
 
         <aside className="playground-controls" aria-label="Playground controls">
           <div className="venue-control">
-            <span className="control-label"><MapPin size={12} aria-hidden="true" /> PICTURE IT HERE</span>
+            <span className="control-label"><MapPin size={12} aria-hidden="true" /> CHOOSE A SCENE</span>
             <div className="venue-options" role="group" aria-label="Choose a venue">{venuePresets.map(item => <button type="button" key={item.id} aria-pressed={venue === item.id} onClick={() => setVenue(item.id)}>{item.name}</button>)}</div>
             <p>{activeVenue.description}</p>
-            <button type="button" className="venue-motion-toggle" aria-pressed={ambientMotion} onClick={() => setAmbientMotion(value => !value)}>{ambientMotion ? <Pause size={13} /> : <Play size={13} />}{ambientMotion ? "Pause ambient motion" : "Play ambient motion"}</button>
+            <button type="button" className="venue-motion-toggle" aria-pressed={ambientMotion} onClick={() => setAmbientMotion(value => !value)}>{ambientMotion ? <Pause size={13} aria-hidden="true" /> : <Play size={13} aria-hidden="true" />}{ambientMotion ? "Pause scene animation" : "Play scene animation"}</button>
           </div>
           <div className="camera-window">
             <video ref={videoRef} className={cameraActive ? "gesture-video is-visible" : "gesture-video"} autoPlay muted playsInline aria-label="Mirrored camera preview" onLoadedMetadata={event => { const video = event.currentTarget; cameraAspectRef.current = video.videoWidth / Math.max(video.videoHeight, 1); }} />
@@ -306,7 +319,7 @@ export function GesturePlayground({ showHeading = true }: { showHeading?: boolea
             <button className="reset-button" onClick={resetView}><RotateCcw size={13} aria-hidden="true" /> Recenter view</button>
           </div>
           <p className="privacy-note">Choose Enable camera, then Allow when your browser asks. Your video stays in this browser. Microphone access is never requested.</p>
-          <p className="venue-credits">Venue imagery · <a href="https://polyhaven.com" target="_blank" rel="noopener noreferrer">Poly Haven</a></p>
+          <p className="scene-preview-note">Illustrated venues and virtual guests. Explore where AIBox could fit into your next event.</p>
         </aside>
       </div>
     </section>

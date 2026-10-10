@@ -2,28 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import { Application, Graphics } from "pixi.js";
-import { getVenue, type VenueId } from "./venue-presets";
 
 type HandPosition = { x: number; y: number; visible: boolean; pinching?: boolean };
 
 /** Decorative tracking cues; instructions and controls remain accessible HTML. */
-export function PixiGestureOverlay({ accent, venue, ambientMotion }: { accent: string; venue: VenueId; ambientMotion: boolean }) {
+export function PixiGestureOverlay({ accent }: { accent: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const accentRef = useRef(accent);
   const redrawRef = useRef<(() => void) | null>(null);
-  const venueRef = useRef(venue);
-  const motionRef = useRef(ambientMotion);
-  const syncRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     accentRef.current = accent;
     redrawRef.current?.();
   }, [accent]);
-
-  useEffect(() => {
-    venueRef.current = venue; motionRef.current = ambientMotion;
-    syncRef.current?.(); redrawRef.current?.();
-  }, [venue, ambientMotion]);
 
   useEffect(() => {
     const element = hostRef.current;
@@ -70,26 +61,8 @@ export function PixiGestureOverlay({ accent, venue, ambientMotion }: { accent: s
         const color = Number.parseInt(accentRef.current.slice(1), 16) || 0x73c9ff;
         const centerX = app.screen.width * 0.5;
         const centerY = app.screen.height * 0.47;
-        const still = motionQuery.matches || !motionRef.current;
+        const still = motionQuery.matches;
         const pulse = still ? 0 : Math.sin(tick * 0.045) * 5;
-        const atmosphere = getVenue(venueRef.current).atmosphere;
-
-        // A restrained aiming field around the booth, visible before camera access.
-        if (atmosphere === "none") {
-          graphics.circle(centerX, centerY, 120 + pulse).stroke({ color, alpha: 0.12, width: 1 });
-          graphics.circle(centerX, centerY, 174 - pulse).stroke({ color, alpha: 0.06, width: 1 });
-        } else {
-          const drift = still ? 0 : tick * .0015;
-          for (let index = 0; index < 16; index++) {
-            // Ambient details stay near the room edges so the booth remains clear.
-            const side = index % 2 === 0 ? .12 : .87;
-            const x = app.screen.width * (side + Math.sin(index * 2.1 + drift) * .065);
-            const y = ((index / 16 + drift * .16) % 1) * app.screen.height;
-            const warm = atmosphere === "petals" || atmosphere === "dust" ? 0xffe6bb : color;
-            if (atmosphere === "petals") graphics.ellipse(x, y, 3, 1.5).fill({ color: warm, alpha: .35 });
-            else graphics.circle(x, y, atmosphere === "dust" ? 1.4 : 2.4).fill({ color: warm, alpha: .22 });
-          }
-        }
 
         if (hand.visible) {
           const x = (1 - hand.x) * app.screen.width;
@@ -117,21 +90,21 @@ export function PixiGestureOverlay({ accent, venue, ambientMotion }: { accent: s
         tick += 1;
         burst = Math.max(0, burst - 0.035);
         paint();
+        if (!hand.visible && burst <= .01) app.ticker.stop();
       };
       app.ticker.add(animate);
       const syncTicker = () => {
-        if (inView && !document.hidden && !motionQuery.matches && motionRef.current) app.ticker.start();
+        if (inView && !document.hidden && !motionQuery.matches && (hand.visible || burst > .01)) app.ticker.start();
         else app.ticker.stop();
         drawOnce();
       };
-      syncRef.current = syncTicker;
       const onHand = (event: Event) => {
         hand = (event as CustomEvent<HandPosition>).detail;
-        drawOnce();
+        syncTicker();
       };
       const onGesture = () => {
-        burst = 1;
-        drawOnce();
+        burst = motionQuery.matches ? 0 : 1;
+        syncTicker();
       };
       const stage = host.parentElement;
       stage?.addEventListener("aibox:hand", onHand);
@@ -147,7 +120,6 @@ export function PixiGestureOverlay({ accent, venue, ambientMotion }: { accent: s
 
       release = () => {
         redrawRef.current = null;
-        syncRef.current = null;
         observer.disconnect();
         stage?.removeEventListener("aibox:hand", onHand);
         stage?.removeEventListener("aibox:gesture", onGesture);

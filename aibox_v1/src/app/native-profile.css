@@ -275,6 +275,34 @@ html.light .theme-sun { display: none; }
 .native-profile .gesture-playground { padding-top: 8px; padding-bottom: 0; border: 0; background: var(--aibox-bg); }
 .native-profile .playground-console { border-color: var(--aibox-line); border-radius: var(--aibox-radius); background: var(--aibox-surface); box-shadow: none; }
 .native-profile .playground-controls { border-color: var(--aibox-line); background: var(--aibox-surface); }
+.native-profile .playground-stage { min-height: 38rem; background: var(--aibox-cool); perspective: none; }
+.native-profile .stage-caption { align-items: flex-start; color: var(--aibox-ink); font-size: .6rem; letter-spacing: .03em; }
+.native-profile .stage-caption > span { padding: .65rem .8rem; border: 1px solid var(--aibox-line); border-radius: 6px; background: var(--aibox-surface); }
+.native-profile .stage-caption > span:first-child { display: grid; grid-template-columns: 6px 1fr; align-items: center; gap: .35rem .5rem; font-weight: 600; }
+.native-profile .stage-caption i { width: 5px; height: 5px; border-radius: 50%; background: var(--aibox-blue); }
+.native-profile .stage-caption small { grid-column: 2; color: var(--aibox-muted); font-size: .53rem; font-weight: 400; }
+.scene-summary { position: absolute; z-index: 4; top: 5.6rem; left: 1.4rem; display: flex; gap: .5rem; pointer-events: none; }
+.scene-summary > span { display: flex; align-items: center; gap: .65rem; min-width: 105px; padding: .7rem .85rem; border: 1px solid var(--aibox-line); border-radius: 6px; background: var(--aibox-surface); }
+.scene-summary > span > svg { color: var(--aibox-blue); }
+.scene-summary small { display: block; margin-bottom: .25rem; color: var(--aibox-muted); font: .52rem/1.2 var(--aibox-mono); }
+.scene-summary strong { color: var(--aibox-ink); font-size: 1rem; font-weight: 600; letter-spacing: -.035em; }
+.scene-view-controls { position: absolute; z-index: 5; top: 5.6rem; right: 1.4rem; display: grid; overflow: hidden; border: 1px solid var(--aibox-line); border-radius: 6px; background: var(--aibox-surface); }
+.scene-view-controls button { display: grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 0; border-bottom: 1px solid var(--aibox-line); color: var(--aibox-ink); background: transparent; cursor: pointer; }
+.scene-view-controls button:last-child { border-bottom: 0; }
+.scene-view-controls button:hover { color: var(--aibox-blue); background: var(--aibox-cool); }
+.scene-view-controls button:disabled { opacity: .35; cursor: default; }
+.scene-view-controls button:focus-visible { outline: 2px solid var(--aibox-blue); outline-offset: -3px; }
+.native-profile .stage-hint { bottom: 1.2rem; border: 1px solid var(--aibox-line); border-radius: 5px; color: var(--aibox-muted); background: var(--aibox-surface); font-size: .62rem; }
+.native-profile .playground-coach { position: relative; left: auto; bottom: auto; width: auto; min-height: 8.6rem; padding: 1rem 1.4rem; border: 0; border-top: 1px solid var(--aibox-line); border-radius: 0; color: var(--aibox-ink); background: var(--aibox-surface); backdrop-filter: none; animation: none; }
+.native-profile .playground-coach > span { color: var(--aibox-blue); }
+.native-profile .playground-coach p { max-width: 35rem; color: var(--aibox-muted); font-size: .7rem; }
+.native-profile .playground-coach-progress { max-width: 7rem; margin-top: .7rem; }
+.native-profile .playground-coach-progress i { background: var(--aibox-line); }
+.native-profile .playground-coach-progress[data-step="01"] i:first-child,
+.native-profile .playground-coach-progress[data-step="02"] i:nth-child(-n+2),
+.native-profile .playground-coach-progress[data-step="03"] i:nth-child(-n+3),
+.native-profile .playground-coach-progress[data-step="04"] i { background: var(--aibox-blue); }
+.scene-preview-note { margin: 0; color: var(--aibox-muted); font: .6rem/1.7 var(--aibox-mono); }
 .native-profile .control-label, .native-profile .gesture-readout p, .native-profile .theme-options > span, .native-profile .reset-button, .native-profile .privacy-note { color: var(--aibox-muted); }
 .native-profile .gesture-result { color: var(--aibox-ink); }
 .native-profile .gesture-readout { border-color: var(--aibox-line); }
@@ -451,7 +479,12 @@ html.dark .profile-enquiry-result[data-state="error"] { color: #ffb4a5; }
   .profile-play-guide article { padding-bottom: 26px; border-bottom: 1px solid var(--aibox-line); }
   .profile-play-guide article > span { margin-bottom: 18px; }
   .native-profile .gesture-playground { padding-inline: 18px; }
-  .native-profile .playground-stage { min-height: 34rem; }
+  .native-profile .playground-stage { min-height: 29rem; }
+  .native-profile .stage-caption { top: 1rem; left: 1rem; right: 1rem; }
+  .native-profile .stage-caption > span { padding: .55rem .6rem; }
+  .scene-summary { top: 5rem; left: 1rem; gap: .35rem; }
+  .scene-summary > span { min-width: 98px; padding: .55rem .65rem; }
+  .scene-view-controls { top: 5rem; right: 1rem; }
   .profile-connect-grid { grid-template-columns: 1fr; gap: 35px; }
   .profile-connect-aside { padding-top: 0; }
   .profile-connect-photo { display: none; }
