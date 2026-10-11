@@ -90,9 +90,11 @@ body:has(.native-profile) { background: var(--aibox-bg); color: var(--aibox-ink)
 .profile-live-dot { width: 5px; height: 5px; flex: none; border-radius: 50%; background: #89b5ff; }
 .native-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--aibox-line); background: var(--aibox-bg); }
 .profile-nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; max-width: 1500px; min-height: 80px; padding: 14px 40px; margin-inline: auto; }
-/* Preserve the original logo artwork on a transparent background in both themes. */
+/* Keep the original artwork transparent; only white lettering gains contrast in light mode. */
 .profile-brand { display: inline-flex; flex: none; align-items: center; width: 138px; background: transparent; line-height: 0; }
 .profile-brand img { display: block; width: 100%; height: auto; }
+.profile-brand-filter { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+html.light .profile-brand img { filter: var(--aibox-logo-light-filter); }
 .profile-desktop-nav { display: flex; align-items: center; gap: 30px; margin-left: auto; margin-right: auto; }
 .profile-desktop-nav > a, .profile-nav-disclosure > button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border: 0; color: var(--aibox-muted); background: transparent; font-size: .85rem; }
 .profile-desktop-nav a:hover, .profile-nav-disclosure > button:hover, .profile-desktop-nav [aria-current="page"], .profile-nav-disclosure > button[data-active="true"] { color: var(--aibox-blue); }
