@@ -1,31 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Check, Sparkles } from "lucide-react";
-import { useState } from "react";
-import { galleryMoments } from "./gallery-moments";
-import { PhotoPrint } from "./PhotoPrint";
+import Image from "next/image";
+import { ArrowUpRight, Check } from "lucide-react";
+import { useId, useState } from "react";
+import { photostripMoments } from "./photostrip-moments";
+import { PhotostripPrint } from "./PhotostripPrint";
+import { PhotoOrnament } from "./PhotoOrnament";
 
-/** Gallery stays an intentional frame browser rather than an automatic photo strip. */
+/** Browse the same photostrip artwork shown on the homepage. */
 export function FrameExplorer() {
   const [selected, setSelected] = useState(0);
-  const moment = galleryMoments[selected];
-  const preview = { ...moment, image: { src: "/images/aibox-event-moment.webp", alt: "AI-generated concept of four friends sharing a photobooth moment" } };
+  const previewId = useId();
+  const moment = photostripMoments[selected];
   return (
     <div className="frame-explorer">
-      <div className="frame-explorer-preview" data-tone={moment.frame.tone}>
-        <span className="profile-micro">your moment, reframed</span>
-        <div className="frame-explorer-print"><PhotoPrint moment={preview} /></div>
-        <span className="profile-micro">illustrative frame preview</span>
+      <div className="frame-explorer-preview" data-tone={moment.tone} id={previewId}>
+        <span className="profile-micro">your moment, our photostrips</span>
+        <PhotoOrnament kind="spark" tone="orange" className="frame-explorer-ornament" />
+        <div className="frame-explorer-print">
+          <PhotostripPrint moment={moment} sizes="(max-width: 435px) 75vw, 320px" />
+        </div>
+        <span className="profile-micro">the complete design / 2:3 print</span>
       </div>
       <div className="frame-explorer-controls">
-        <div aria-live="polite" aria-atomic="true"><span className="profile-micro">{moment.frame.code} / frame collection</span><h3>{moment.frame.name}</h3><p>Same moment. A whole new feeling. Pick a direction to see the frame change.</p></div>
-        <div className="frame-explorer-options" role="group" aria-label="Choose a frame style">
-          {galleryMoments.map((item, index) => <button type="button" key={item.id} data-tone={item.frame.tone} aria-pressed={selected === index} onClick={() => setSelected(index)}><span className="frame-explorer-swatch"><i />{selected === index && <Check size={13} aria-hidden="true" />}</span><span>{item.frame.name}</span></button>)}
+        <div aria-live="polite" aria-atomic="true">
+          <span className="profile-micro">
+            {String(selected + 1).padStart(2, "0")} / {photostripMoments.length} photostrip designs
+          </span>
+          <h3>{moment.name}</h3>
+          <p>
+            Choose a photostrip to see the complete artwork. The same collection you saw on our photo wall,
+            ready for a closer look.
+          </p>
         </div>
-        <div className="frame-explorer-prompt"><span className="profile-micro"><Sparkles size={13} aria-hidden="true" /> a starting direction</span><p>{moment.description}</p></div>
-        <Link href="/connect" className="profile-text-link">Make a frame for your event <ArrowUpRight size={15} aria-hidden="true" /></Link>
-        <small className="profile-note">Design studies for inspiration. This preview doesn’t generate images.</small>
+        <div className="frame-explorer-options" role="group" aria-label="Choose a photostrip design">
+          {photostripMoments.map((item, index) => (
+            <button
+              type="button"
+              key={item.id}
+              data-tone={item.tone}
+              aria-pressed={selected === index}
+              aria-controls={previewId}
+              onClick={() => setSelected(index)}
+            >
+              <span className="frame-explorer-swatch">
+                <Image src={item.image.src} alt="" fill sizes="80px" loading="lazy" draggable={false} />
+                {selected === index && <Check size={13} aria-hidden="true" />}
+              </span>
+              <span>{item.name}</span>
+            </button>
+          ))}
+        </div>
+        <Link href="/connect" className="profile-text-link">
+          Make a frame for your event <ArrowUpRight size={15} aria-hidden="true" />
+        </Link>
+        <small className="profile-note">
+          AIBox photostrip designs for inspiration. Ask us about a frame for your event.
+        </small>
       </div>
     </div>
   );

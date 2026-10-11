@@ -162,10 +162,6 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 .gesture-readout { padding: .15rem 0 .95rem; border-bottom: 1px solid var(--line); }
 .gesture-result { display: flex; align-items: center; gap: .55rem; margin-top: .7rem; color: #f0f5fa; font-size: .85rem; }
 .gesture-readout p { margin: .5rem 0 0; color: #8899aa; font-size: .61rem; line-height: 1.6; }
-.theme-options { display: flex; align-items: center; gap: .55rem; margin-top: .7rem; }
-.theme-choice { width: 1.4rem; height: 1.4rem; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--choice-color); box-shadow: inset 0 0 0 3px #111925; cursor: pointer; }
-.theme-choice.is-selected { border-color: var(--choice-color); box-shadow: 0 0 12px color-mix(in srgb, var(--choice-color) 58%, transparent), inset 0 0 0 3px #111925; }
-.theme-options > span { margin-left: .2rem; color: #bdc9d6; font-size: .67rem; }
 .playground-actions { display: grid; gap: .75rem; }
 .playground-actions .button { width: 100%; }
 .reset-button { display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .35rem; border: 0; color: #acbfd1; background: none; font-size: .67rem; cursor: pointer; }

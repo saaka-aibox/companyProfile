@@ -4,12 +4,17 @@ import { isPreviewDeployment, siteUrl } from "../lib/site-config";
 import "./globals.css";
 import "./profile.css";
 import "./native-profile.css";
+import "./profile-accents.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "AIBOX — The future of the photobooth",
   description: "Meet MagicBooth: the AI photobooth experience built for touch-free capture, beautiful prints, and effortless sharing.",
-  icons: { icon: "/favicon.png", apple: "/favicon.png" },
+  icons: {
+    icon: { url: "/favicon.png", type: "image/png" },
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   robots: isPreviewDeployment ? { index: false, follow: false } : { index: true, follow: true },
 };
 

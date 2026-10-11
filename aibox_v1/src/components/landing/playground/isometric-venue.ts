@@ -1,122 +1,172 @@
 import * as THREE from "three";
 import { createAnimatedGuests } from "./animated-guests";
+import { BOOTH_LOCATION, PHOTO_SPOT } from "./booth-layout";
 import { ScenePrimitives, scenePalette } from "./scene-primitives";
+import { createVenueFurniture } from "./venue-furniture";
 import { getVenue, type VenueId } from "./venue-presets";
 
-export const BOOTH_LOCATION = { x: 1.1, z: .65 };
-
-/** Native, low-poly venues. No panorama downloads or external animation assets. */
+/** Cutaway venues with physical materials, furnishings, and a working photo zone. */
 export function createIsometricVenue(id: VenueId, dark: boolean) {
   const group = new THREE.Group();
   const palette = scenePalette(dark);
   const primitives = new ScenePrimitives();
-  primitives.slab(group, palette.edge, 14.2, 11.2, .27, -.3);
-  primitives.slab(group, palette.floor, 14, 11, .08, -.08);
+  const furniture = createVenueFurniture(group, primitives, palette);
+  primitives.slab(group, palette.edge, 14.2, 11.2, 0.27, -0.3);
+  primitives.slab(group, palette.floor, 14, 11, 0.08, -0.08);
 
-  function plant(x: number, z: number, tall = false) {
-    const height = tall ? 1.75 : .85;
-    primitives.shadow(group, 1.8, 1.5, x, z);
-    primitives.cylinder(group, palette.white, .38, .65, [x, .33, z]);
-    primitives.cylinder(group, palette.wood, .065, height, [x, .65 + height / 2, z]);
-    primitives.sphere(group, palette.leaf, [.57, height * .45, .52], [x, .65 + height, z]);
-    primitives.sphere(group, palette.leafLight, [.4, height * .35, .4], [x + .25, .65 + height * .85, z + .15]);
+  // Small floor joints give the cutaway a believable scale.
+  for (let index = -5; index <= 5; index++) {
+    primitives.box(group, palette.line, [0.012, 0.005, 10.9], [index * 1.25, 0.003, 0]);
   }
+  const zone = primitives.slab(group, palette.blueSoft, 3.1, 2.4, 0.025, 0.008);
+  zone.position.set(BOOTH_LOCATION.x, 0.008, BOOTH_LOCATION.z);
+  const spot = new THREE.Mesh(
+    new THREE.RingGeometry(0.6, 0.64, 32),
+    new THREE.MeshBasicMaterial({ color: palette.blue, side: THREE.DoubleSide }),
+  );
+  spot.rotation.x = -Math.PI / 2;
+  spot.position.set(PHOTO_SPOT.x, 0.026, PHOTO_SPOT.z);
+  spot.userData.excludeFromPhoto = true;
+  group.add(spot);
 
-  function table(x: number, z: number, wedding = false) {
-    primitives.shadow(group, 2.8, 2.4, x, z);
-    primitives.cylinder(group, palette.wood, .13, 1.15, [x, .57, z]);
-    primitives.cylinder(group, wedding ? palette.white : palette.wood, .95, .13, [x, 1.2, z]);
-    primitives.cylinder(group, palette.white, .12, .21, [x, 1.37, z]);
-    if (wedding) primitives.sphere(group, palette.rose, [.22, .2, .22], [x, 1.55, z]);
-    else primitives.cylinder(group, palette.gold, .055, .04, [x, 1.48, z]);
-    for (const offset of [-1.35, 1.35]) {
-      primitives.cylinder(group, palette.wood, .075, .66, [x + offset, .33, z]);
-      primitives.cylinder(group, wedding ? palette.rose : palette.leaf, .33, .14, [x + offset, .73, z]);
-    }
-  }
+  // Single-sided cutaway panel: visible from the booth lens, open from above.
+  const photoWall = primitives.panel(
+    group,
+    id === "launch" ? palette.blue : palette.linen,
+    4.8,
+    3.2,
+    [PHOTO_SPOT.x, 1.6, 5.15],
+    id === "coffee" ? "wood" : "fabric",
+  );
+  photoWall.rotation.y = Math.PI;
+  const photoSign = primitives.label(
+    group,
+    id === "wedding"
+      ? "BETTER TOGETHER"
+      : id === "coffee"
+        ? "GOOD COFFEE. GOOD MOMENTS."
+        : id === "launch"
+          ? "MAKE A MOMENT / AIBOX"
+          : "YOUR MOMENT / AIBOX",
+    id === "launch" ? palette.white : palette.ink,
+    id === "launch" ? palette.blue : palette.linen,
+    3.4,
+    0.48,
+  );
+  photoSign.rotation.y = Math.PI;
+  photoSign.position.set(PHOTO_SPOT.x, 2.75, 5.13);
+  // Branding faces the photo lens, rather than occluding the cutaway from behind.
+  (photoSign.material as THREE.MeshBasicMaterial).side = THREE.FrontSide;
+  furniture.plant(PHOTO_SPOT.x - 2.1, 4.8, true);
+  furniture.plant(PHOTO_SPOT.x + 2.1, 4.8, true);
 
-  function bench(x: number, z: number) {
-    primitives.shadow(group, 3.2, 1.6, x, z);
-    primitives.box(group, palette.wood, [2.7, .2, .8], [x, .65, z]);
-    primitives.box(group, palette.wall, [2.7, .65, .14], [x, 1.04, z - .35]);
-    for (const offset of [-1, 1]) primitives.box(group, palette.ink, [.13, .6, .55], [x + offset, .3, z]);
-  }
-
-  function sign(text: string, x: number, z: number, color = palette.blue) {
-    const label = primitives.label(group, text, palette.white, color, 3, .75);
-    label.position.set(x, 2.8, z);
-    primitives.box(group, palette.white, [.08, 2.9, .08], [x - 1.05, 1.45, z]);
-    primitives.box(group, palette.white, [.08, 2.9, .08], [x + 1.05, 1.45, z]);
-  }
-
-  // Blue inset and a floor label locate the booth without surrounding it with UI effects.
-  const zone = primitives.slab(group, palette.blueSoft, 3.45, 2.95, .035, .002);
-  zone.position.set(BOOTH_LOCATION.x, .002, BOOTH_LOCATION.z);
-  const boothShadow = primitives.shadow(group, 3.6, 3, BOOTH_LOCATION.x, BOOTH_LOCATION.z);
-  boothShadow.position.y = .043;
-  const floorLabel = primitives.label(group, "AIBOX / PHOTO ZONE", palette.blue, palette.blueSoft, 2.7, .5);
-  floorLabel.rotation.x = -Math.PI / 2;
-  floorLabel.position.set(BOOTH_LOCATION.x, .047, BOOTH_LOCATION.z + 1.13);
-
-  // Sparse path markers add scale; guests follow the open aisle around the booth.
-  for (let index = 0; index < 8; index++) {
-    primitives.box(group, palette.line, [.28, .015, .06], [-3.2 + index * .88, .012, 4.8]);
-  }
-
-  if (id === "wedding") {
+  if (id === "coffee") {
+    primitives.box(group, palette.wall, [11.8, 3.6, 0.18], [0, 1.8, -4.65], "plaster");
+    primitives.box(group, palette.wood, [5.2, 1.05, 1.25], [1, 0.53, -3.55], "wood");
+    primitives.box(group, palette.linen, [5.4, 0.13, 1.4], [1, 1.12, -3.55], "stone");
+    const machine = primitives.box(group, palette.metal, [0.95, 0.62, 0.6], [1.7, 1.5, -3.65], "metal");
+    primitives.box(machine, palette.charcoal, [0.7, 0.09, 0.13], [0, 0.14, 0.35]);
+    for (const dx of [-0.26, 0.26])
+      primitives.cylinder(group, palette.charcoal, 0.035, 0.13, [1.7 + dx, 1.42, -3.26], "metal");
+    for (const x of [-0.25, 0.05, 0.35])
+      primitives.cylinder(group, palette.white, 0.09, 0.18, [x, 1.3, -3.45]);
+    primitives.box(group, palette.wood, [3.2, 0.12, 0.35], [-3.4, 2.65, -4.35], "wood");
+    for (let index = 0; index < 7; index++)
+      primitives.box(
+        group,
+        index % 2 ? palette.linen : palette.wood,
+        [0.18, 0.37, 0.14],
+        [-4.6 + index * 0.35, 2.91, -4.33],
+      );
+    const menu = primitives.label(group, "COFFEE & GOOD COMPANY", palette.linen, palette.charcoal, 3.8, 0.9);
+    menu.position.set(1, 2.65, -4.53);
+    // Window mullions, transparent glazing, and warm overhead fixtures.
+    primitives.box(group, palette.glass, [0.035, 2.65, 3.4], [-6.5, 1.95, -2.1], "glass");
+    for (const z of [-3.8, -2.1, -0.4])
+      primitives.box(group, palette.charcoal, [0.07, 2.85, 0.06], [-6.5, 1.95, z], "metal");
+    for (const y of [0.55, 3.38])
+      primitives.box(group, palette.charcoal, [0.07, 0.06, 3.5], [-6.5, y, -2.1], "metal");
+    furniture.table(-4.3, -2.2);
+    furniture.bench(4.6, -3.6);
+    furniture.pendant(-1, -3.55);
+    furniture.pendant(2.5, -3.55);
+  } else if (id === "wedding") {
     const arch = new THREE.Group();
-    arch.position.set(-.45, 0, -3.65);
-    primitives.box(arch, palette.white, [.2, 3.45, .25], [-1.6, 1.73, 0]);
-    primitives.box(arch, palette.white, [.2, 3.45, .25], [1.6, 1.73, 0]);
+    arch.position.set(0, 0, -3.95);
+    for (const x of [-1.65, 1.65]) primitives.cylinder(arch, palette.gold, 0.055, 3.3, [x, 1.65, 0], "metal");
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.6, 3.4, 0), new THREE.Vector3(-1.1, 4.25, 0),
-      new THREE.Vector3(0, 4.55, 0), new THREE.Vector3(1.1, 4.25, 0), new THREE.Vector3(1.6, 3.4, 0),
+      new THREE.Vector3(-1.65, 3.2, 0),
+      new THREE.Vector3(-1.1, 4.05, 0),
+      new THREE.Vector3(0, 4.4, 0),
+      new THREE.Vector3(1.1, 4.05, 0),
+      new THREE.Vector3(1.65, 3.2, 0),
     ]);
-    arch.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, .11, 6, false), new THREE.MeshStandardMaterial({ color: palette.white, roughness: .8 })));
-    for (let index = 0; index < 7; index++) {
-      const point = curve.getPoint(index / 6);
-      primitives.sphere(arch, index % 2 ? palette.rose : palette.leafLight, [.23, .23, .23], [point.x, point.y, .1]);
+    arch.add(
+      new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 24, 0.06, 6, false),
+        new THREE.MeshStandardMaterial({ color: palette.gold, metalness: 0.5, roughness: 0.4 }),
+      ),
+    );
+    for (let index = 0; index < 16; index++) {
+      const point = curve.getPoint(index / 15);
+      primitives.sphere(
+        arch,
+        index % 3 ? palette.leaf : palette.rose,
+        [0.18, 0.17, 0.18],
+        [point.x, point.y, 0.04],
+      );
     }
+    for (const x of [-1.4, 1.4])
+      primitives.box(arch, palette.linen, [0.55, 2.8, 0.04], [x, 1.9, -0.07], "fabric");
     group.add(arch);
-    table(-4.2, -2.9, true);
-    bench(4.4, -3.55);
-    plant(-5.9, -4.1, true);
-    plant(5.8, -4.2, true);
-  } else if (id === "coffee") {
-    primitives.box(group, palette.wall, [11.5, 2.8, .18], [0, 1.4, -4.55]);
-    primitives.box(group, palette.wood, [4.4, 1.1, 1.2], [1.1, .55, -3.45]);
-    primitives.box(group, palette.white, [4.6, .14, 1.3], [1.1, 1.18, -3.45]);
-    primitives.box(group, palette.ink, [.75, .62, .5], [1.5, 1.55, -3.6]);
-    primitives.box(group, palette.white, [.58, .12, .4], [1.5, 1.3, -3.25]);
-    for (const x of [-.2, .2]) primitives.cylinder(group, palette.white, .09, .18, [x, 1.34, -3.4]);
-    const menu = primitives.label(group, "COFFEE & GOOD COMPANY", palette.ink, palette.wall, 4.1, 1);
-    menu.position.set(.7, 2.27, -4.44);
-    table(-4.1, -2.6);
-    plant(-5.8, -4.1, true);
-    plant(5.5, -3.9, true);
+    furniture.table(-4.3, -2.4, true);
+    furniture.table(4.5, -2.9, true);
+    for (let index = 0; index < 10; index++)
+      primitives.sphere(
+        group,
+        palette.light,
+        [0.055, 0.07, 0.055],
+        [-5.7 + index * 1.25, 4 - Math.sin((index / 9) * Math.PI) * 0.55, -4.5],
+      );
+    // Floral accents behind the posing guest also appear in the captured portrait.
+    for (const dx of [-1.75, 1.75])
+      for (let index = 0; index < 4; index++)
+        primitives.sphere(
+          group,
+          index % 2 ? palette.rose : palette.linen,
+          [0.18, 0.16, 0.15],
+          [PHOTO_SPOT.x + dx, 2.1 + index * 0.2, 5.08],
+        );
   } else if (id === "launch") {
-    primitives.box(group, palette.blue, [6.2, 3.4, .17], [0, 1.7, -4.25]);
-    const branding = primitives.label(group, "aibox / MAKE A MOMENT", palette.white, palette.blue, 5.1, 1.1);
-    branding.position.set(0, 2.2, -4.15);
-    for (const x of [-4.8, -3.45]) {
-      primitives.box(group, palette.white, [.95, .9, .95], [x, .45, -2.9]);
-      primitives.sphere(group, x < -4 ? palette.gold : palette.blue, [.28, .28, .28], [x, 1.2, -2.9]);
+    primitives.box(group, palette.charcoal, [6.8, 0.35, 1.65], [0, 0.18, -3.7], "stone");
+    primitives.box(group, palette.blue, [6.8, 3.55, 0.16], [0, 2, -4.45], "plaster");
+    const sign = primitives.label(group, "aibox / MAKE A MOMENT", palette.white, palette.blue, 5.1, 0.85);
+    sign.position.set(0, 2.5, -4.35);
+    for (const x of [-4.85, 4.85]) {
+      primitives.box(group, palette.white, [0.85, 1, 0.85], [x, 0.5, -3.2], "stone");
+      primitives.sphere(group, palette.blue, [0.23, 0.23, 0.23], [x, 1.25, -3.2]);
     }
-    bench(4.2, -3.5);
-    plant(-5.7, -4.35, true);
-    plant(5.7, -4.1, true);
+    furniture.softbox(-3.9, -4.1, 0.35);
+    furniture.softbox(3.9, -4.1, -0.35);
+    furniture.bench(-4.5, -1.95);
   } else {
-    primitives.box(group, palette.wall, [5.9, 2.9, .17], [-.4, 1.45, -4.1]);
-    sign("AIBOX / OPEN STUDIO", -.4, -3.95);
-    bench(-4.5, -3);
-    plant(-5.9, -4.3, true);
-    plant(4.9, -3.8, true);
+    primitives.box(group, palette.wall, [7.5, 3.6, 0.18], [0, 1.8, -4.55], "plaster");
+    primitives.box(group, palette.linen, [4.2, 3, 0.025], [0, 1.8, -4.43], "fabric");
+    const roll = primitives.cylinder(group, palette.white, 0.15, 4.3, [0, 3.45, -4.35]);
+    roll.rotation.z = Math.PI / 2;
+    primitives.box(group, palette.linen, [4.2, 0.02, 1.4], [0, 0.014, -3.8], "fabric");
+    furniture.softbox(-3.2, -3.5, 0.35);
+    furniture.softbox(3.2, -3.5, -0.35);
+    furniture.bench(-4.7, -1.9);
+    const sign = primitives.label(group, "AIBOX / OPEN STUDIO", palette.ink, palette.wall, 3.1, 0.45);
+    sign.position.set(0, 3.15, -4.43);
   }
 
+  furniture.plant(-5.85, -4.2, true);
+  furniture.plant(5.85, -4.2, true);
   const guests = createAnimatedGuests(primitives, palette, getVenue(id).guests);
   group.add(guests.group);
-  guests.update(0);
-  return { group, update: guests.update, palette };
+  return { group, guests, palette };
 }
 
 export type IsometricVenue = ReturnType<typeof createIsometricVenue>;
