@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Pause, Play, Quote, RotateCw } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { ArrowUpRight, Quote, RotateCw } from "lucide-react";
+import { useCallback, useId, useRef, useState } from "react";
 import { photostripMoments, type PhotostripMoment } from "./photostrip-moments";
 import { PhotostripPrint } from "./PhotostripPrint";
 import { useInfinitePhotoLoop } from "./useInfinitePhotoLoop";
@@ -92,14 +92,17 @@ function ReviewCard({
 export function PhotoResultsCarousel() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
-  const [manualPause, setManualPause] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const [opened, setOpened] = useState<string | null>(null);
   const [keyboardFocus, setKeyboardFocus] = useState(false);
-  const viewportId = useId();
-  const userPaused = manualPause || opened !== null;
+  const instructionsId = useId();
+  const startDrag = useCallback(() => {
+    setHovered(null);
+    setOpened(null);
+    setKeyboardFocus(false);
+  }, []);
 
-  useInfinitePhotoLoop(viewportRef, stripRef, userPaused || keyboardFocus || hovered !== null);
+  const { dragging } = useInfinitePhotoLoop(viewportRef, stripRef, keyboardFocus, startDrag);
 
   function toggleReview(key: string, button: HTMLButtonElement) {
     if (opened === key) {
@@ -107,17 +110,10 @@ export function PhotoResultsCarousel() {
       return;
     }
     setOpened(key);
-    // After the loop pauses, bring the whole review into view on narrow screens.
-    requestAnimationFrame(() =>
-      button.scrollIntoView({ block: "nearest", inline: "center", behavior: "instant" }),
-    );
-  }
-
-  function togglePlayback() {
-    if (userPaused) {
-      setManualPause(false);
-      setOpened(null);
-    } else setManualPause(true);
+    // Keyboard focus stays readable; pointer interactions leave the loop moving.
+    if (button.matches(":focus-visible")) {
+      button.scrollIntoView({ block: "nearest", inline: "center", behavior: "instant" });
+    }
   }
 
   return (
@@ -128,22 +124,19 @@ export function PhotoResultsCarousel() {
       aria-label="AIBox photostrips and guest review previews"
     >
       <div className="moment-loop-bar profile-container">
-        <span className="profile-micro">our photostrips / hover or tap to turn</span>
-        <button
-          type="button"
-          className="moment-loop-toggle"
-          aria-pressed={userPaused}
-          aria-controls={viewportId}
-          onClick={togglePlayback}
-        >
-          {userPaused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
-          {userPaused ? "Resume photo loop" : "Pause photo loop"}
-        </button>
+        <span className="profile-micro" id={instructionsId}>
+          our photostrips / drag to explore · hover or tap to turn
+        </span>
       </div>
       <div
         ref={viewportRef}
-        id={viewportId}
         className="moment-loop-viewport"
+        data-dragging={dragging}
+        tabIndex={0}
+        aria-label="Photostrips: drag left or right, or use the arrow keys"
+        aria-describedby={instructionsId}
+        onPointerDownCapture={() => setKeyboardFocus(false)}
+        onDragStart={(event) => event.preventDefault()}
         onFocusCapture={(event) => {
           if (event.target.matches(":focus-visible")) setKeyboardFocus(true);
         }}
@@ -161,9 +154,11 @@ export function PhotoResultsCarousel() {
                     key={key}
                     moment={moment}
                     decorative={copy !== 1}
-                    flipped={hovered === key || opened === key}
-                    onHover={() => setHovered(key)}
-                    onLeave={() => setHovered(null)}
+                    flipped={!dragging && (hovered === key || opened === key)}
+                    onHover={() => {
+                      if (!dragging) setHovered(key);
+                    }}
+                    onLeave={() => setHovered((current) => (current === key ? null : current))}
                     onToggle={(button) => toggleReview(key, button)}
                   />
                 );

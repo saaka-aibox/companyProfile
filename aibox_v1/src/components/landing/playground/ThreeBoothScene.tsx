@@ -11,6 +11,7 @@ import { createFixedBooth } from "./fixed-booth";
 import { createSceneNavigation } from "./scene-navigation";
 import { captureBoothPhoto } from "./booth-photo";
 import { createPhotoSession, type PhotoSession } from "./photo-session";
+import { createVisitorBadge } from "./visitor-avatar";
 import { getVenue, type VenueId } from "./venue-presets";
 import type { BoothPose } from "./pinch-rotation";
 import type {
@@ -20,7 +21,9 @@ import type {
   PhotoTask,
   SceneController,
   ScenePhoto,
+  VisitorHand,
 } from "./playground-types";
+import { VISITOR_GUEST, photoTaskBusy } from "./playground-types";
 
 type SceneSettings = {
   venue: VenueId;
@@ -30,6 +33,8 @@ type SceneSettings = {
   accent: string;
   ambientMotion: boolean;
   dark: boolean;
+  cameraActive: boolean;
+  visitorReady: boolean;
 };
 type SceneProps = SceneSettings & {
   poseRef: RefObject<BoothPose>;
@@ -38,6 +43,9 @@ type SceneProps = SceneSettings & {
   onGuestSelect: (guest: number) => void;
   onTask: (task: PhotoTask) => void;
   onPhoto: (photo: ScenePhoto) => void;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  handRef: RefObject<VisitorHand>;
+  onVisitorCapture: () => Promise<boolean>;
 };
 
 const MODEL_URL = "/3d/Casing%201.glb";
@@ -51,21 +59,54 @@ export function ThreeBoothScene({
   onGuestSelect,
   onTask,
   onPhoto,
+  onVisitorCapture,
+  videoRef,
+  handRef,
   ...settings
 }: SceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const updateSceneRef = useRef<((settings: SceneSettings) => void) | null>(null);
   const latestRef = useRef(settings);
-  const callbacksRef = useRef({ onStatus, onGuestSelect, onTask, onPhoto });
-  const { venue, boothKind, selectedGuest, interactionMode, accent, ambientMotion, dark } = settings;
+  const callbacksRef = useRef({ onStatus, onGuestSelect, onTask, onPhoto, onVisitorCapture });
+  const {
+    venue,
+    boothKind,
+    selectedGuest,
+    interactionMode,
+    accent,
+    ambientMotion,
+    dark,
+    cameraActive,
+    visitorReady,
+  } = settings;
 
   useEffect(() => {
-    callbacksRef.current = { onStatus, onGuestSelect, onTask, onPhoto };
-  }, [onStatus, onGuestSelect, onTask, onPhoto]);
+    callbacksRef.current = { onStatus, onGuestSelect, onTask, onPhoto, onVisitorCapture };
+  }, [onStatus, onGuestSelect, onTask, onPhoto, onVisitorCapture]);
   useEffect(() => {
-    latestRef.current = { venue, boothKind, selectedGuest, interactionMode, accent, ambientMotion, dark };
+    latestRef.current = {
+      venue,
+      boothKind,
+      selectedGuest,
+      interactionMode,
+      accent,
+      ambientMotion,
+      dark,
+      cameraActive,
+      visitorReady,
+    };
     updateSceneRef.current?.(latestRef.current);
-  }, [venue, boothKind, selectedGuest, interactionMode, accent, ambientMotion, dark]);
+  }, [
+    venue,
+    boothKind,
+    selectedGuest,
+    interactionMode,
+    accent,
+    ambientMotion,
+    dark,
+    cameraActive,
+    visitorReady,
+  ]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -86,6 +127,7 @@ export function ThreeBoothScene({
     let modelStatus: ModelStatus = "loading";
     let venueScene: IsometricVenue | null = null;
     let fixedBooth: ReturnType<typeof createFixedBooth> | null = null;
+    let visitorBadge: ReturnType<typeof createVisitorBadge> | null = null;
     let photoSession: PhotoSession | null = null;
     let currentSettings: SceneSettings | null = null;
     const abort = new AbortController();
@@ -132,10 +174,15 @@ export function ThreeBoothScene({
       booth.rotation.x = THREE.MathUtils.lerp(booth.rotation.x, THREE.MathUtils.degToRad(pose.y), smoothing);
       const ambient = Boolean(currentSettings?.ambientMotion) && !motionQuery.matches;
       if (ambient) elapsed += delta;
-      venueScene?.guests.update(delta, ambient, motionQuery.matches);
+      venueScene?.guests.update(delta, ambient, motionQuery.matches, handRef.current);
+      if (visitorBadge && venueScene) {
+        visitorBadge.group.visible =
+          currentSettings?.selectedGuest === VISITOR_GUEST && currentSettings?.boothKind === "portable";
+        visitorBadge.update(camera, venueScene.guests.getVisitor(), Boolean(currentSettings?.cameraActive));
+      }
       if (ambient) fixedBooth?.update(elapsed);
       photoSession?.update(delta);
-      renderer.render(scene, camera);
+      if (inView) renderer.render(scene, camera);
     }
 
     const navigation = createSceneNavigation(camera, renderer.domElement, () => {
@@ -155,17 +202,22 @@ export function ThreeBoothScene({
     }
 
     function animationNeeded() {
-      if (!inView || document.hidden || contextLost) return false;
+      if (document.hidden || contextLost) return false;
       const taskActive = photoSession?.task.phase === "walking" || photoSession?.task.phase === "countdown";
+      // The camera studio can be below the 3D viewport. Explicit tasks keep their
+      // clock while offscreen, without rendering ambient WebGL frames there.
+      if (!inView) return taskActive;
       const pose = poseRef.current;
       const boothMoving =
         Math.abs(booth.rotation.y - THREE.MathUtils.degToRad(pose.x)) > 0.001 ||
         Math.abs(booth.rotation.x - THREE.MathUtils.degToRad(pose.y)) > 0.001;
       return (
         taskActive ||
+        (Boolean(currentSettings?.cameraActive) && currentSettings?.selectedGuest === VISITOR_GUEST) ||
         (!motionQuery.matches &&
           (Boolean(currentSettings?.ambientMotion) ||
             Boolean(venueScene?.guests.hasJourneys()) ||
+            Boolean(venueScene?.guests.isVisitorMoving()) ||
             boothMoving))
       );
     }
@@ -186,6 +238,7 @@ export function ThreeBoothScene({
 
     function capture(guest: number) {
       if (!venueScene || !currentSettings || contextLost) throw new Error("Scene unavailable");
+      if (guest === VISITOR_GUEST) return callbacksRef.current.onVisitorCapture();
       const restoreGuests = venueScene.guests.isolateForPhoto();
       const hidden: THREE.Object3D[] = [];
       const boothWasVisible = booth.visible;
@@ -201,7 +254,11 @@ export function ThreeBoothScene({
           src: captureBoothPhoto(renderer, scene, currentSettings.venue, guest),
           venue: currentSettings.venue,
           guest,
+          source: "virtual",
+          width: 660,
+          height: 900,
         });
+        return true;
       } finally {
         hidden.forEach((object) => {
           object.visible = true;
@@ -223,9 +280,22 @@ export function ThreeBoothScene({
           scene.remove(fixedBooth.group);
           disposeObject(fixedBooth.group);
         }
+        if (visitorBadge) {
+          scene.remove(visitorBadge.group);
+          disposeObject(visitorBadge.group);
+          visitorBadge = null;
+        }
         venueScene = createIsometricVenue(next.venue, next.dark);
         fixedBooth = createFixedBooth(next.dark);
         scene.add(venueScene.group, fixedBooth.group);
+        if (videoRef.current) {
+          visitorBadge = createVisitorBadge(
+            videoRef.current,
+            venueScene.palette.white,
+            venueScene.palette.blue,
+          );
+          scene.add(visitorBadge.group);
+        }
         scene.background = new THREE.Color(venueScene.palette.background);
         key.intensity = next.dark ? 2 : 2.2;
         key.color.set(getVenue(next.venue).light);
@@ -265,6 +335,15 @@ export function ThreeBoothScene({
       orbitTo: navigation.orbitTo,
       panBy: navigation.panBy,
       zoomBy: navigation.zoomBy,
+      moveVisitorBy(x, z) {
+        if (currentSettings?.boothKind !== "portable" || currentSettings.selectedGuest !== VISITOR_GUEST)
+          return;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0).setY(0).normalize();
+        const down = new THREE.Vector3().crossVectors(right, new THREE.Vector3(0, 1, 0)).normalize();
+        const shift = right.multiplyScalar(x).add(down.multiplyScalar(z));
+        venueScene?.guests.moveVisitorBy(shift.x, shift.z);
+        syncAnimation();
+      },
       resetView() {
         poseRef.current = { x: 0, y: 0 };
         navigation.resetView();
@@ -272,12 +351,15 @@ export function ThreeBoothScene({
       },
       sendGuest() {
         if (modelStatus !== "ready" || currentSettings?.boothKind !== "portable") return;
+        if (currentSettings.selectedGuest === VISITOR_GUEST && !currentSettings.cameraActive) return;
+        if (currentSettings.selectedGuest === VISITOR_GUEST && photoSession?.task.phase !== "idle") return;
         poseRef.current = { x: 0, y: 0 };
         photoSession?.send(currentSettings.selectedGuest);
         syncAnimation();
       },
       captureGuest() {
         if (currentSettings?.boothKind !== "portable" || modelStatus !== "ready") return;
+        if (currentSettings.selectedGuest === VISITOR_GUEST && !currentSettings.visitorReady) return;
         photoSession?.capture();
         syncAnimation();
       },
@@ -356,7 +438,7 @@ export function ThreeBoothScene({
         currentSettings?.boothKind !== "portable"
       )
         return;
-      if (photoSession?.task.phase === "walking" || photoSession?.task.phase === "countdown") return;
+      if (photoSession && photoTaskBusy(photoSession.task)) return;
       const bounds = renderer.domElement.getBoundingClientRect();
       raycaster.setFromCamera(
         new THREE.Vector2(
@@ -406,6 +488,7 @@ export function ThreeBoothScene({
 
     return () => {
       disposed = true;
+      photoSession?.cancel();
       abort.abort();
       renderer.setAnimationLoop(null);
       controllerRef.current = null;
@@ -427,7 +510,7 @@ export function ThreeBoothScene({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [poseRef, controllerRef]);
+  }, [poseRef, controllerRef, videoRef, handRef]);
 
   return <div ref={hostRef} className="playground-three" aria-hidden="true" />;
 }

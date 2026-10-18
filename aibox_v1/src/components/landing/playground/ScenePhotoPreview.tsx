@@ -4,13 +4,19 @@ import { useRef } from "react";
 import { getVenue } from "./venue-presets";
 import type { ScenePhoto } from "./playground-types";
 
-export function ScenePhotoPreview({ photo }: { photo: ScenePhoto | null }) {
+export function ScenePhotoPreview({ photo, onClear }: { photo: ScenePhoto | null; onClear?: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const cameraPhoto = photo?.source === "camera";
+  const description = photo
+    ? cameraPhoto
+      ? `Your four camera photos in the AIBox ${photo.frameName} photostrip`
+      : `Virtual Guest ${photo.guest + 1} photographed in the AIBox ${getVenue(photo.venue).name} scene`
+    : "";
   return (
     <div
       id="playground-photo-preview"
       className={`scene-photo-preview${photo ? " has-photo" : ""}`}
-      aria-label="Virtual photo preview"
+      aria-label="Your AIBox photo preview"
     >
       {photo ? (
         <>
@@ -18,36 +24,46 @@ export function ScenePhotoPreview({ photo }: { photo: ScenePhoto | null }) {
             type="button"
             className="scene-photo-thumbnail"
             onClick={() => dialogRef.current?.showModal()}
-            aria-label="Enlarge your captured virtual photo"
+            aria-label={
+              cameraPhoto ? "Enlarge your camera photostrip" : "Enlarge your captured virtual photo"
+            }
           >
-            <Image
-              src={photo.src}
-              alt={`Virtual Guest ${photo.guest + 1} photographed in the AIBox ${getVenue(photo.venue).name} scene`}
-              width={660}
-              height={900}
-              unoptimized
-            />
+            <Image src={photo.src} alt={description} width={photo.width} height={photo.height} unoptimized />
             <span>
               <Maximize2 size={12} aria-hidden="true" /> enlarge
             </span>
           </button>
           <div>
-            <span className="profile-micro">your moment / virtual photo</span>
-            <h3>A little keepsake.</h3>
+            <span className="profile-micro">
+              your moment / {cameraPhoto ? "camera photostrip" : "virtual photo"}
+            </span>
+            <h3>{cameraPhoto ? "Four moments. All you." : "A little keepsake."}</h3>
             <p>
-              Guest {String(photo.guest + 1).padStart(2, "0")} · {getVenue(photo.venue).name}
+              {cameraPhoto ? "You / Guest 06" : `Guest ${String(photo.guest + 1).padStart(2, "0")}`} ·{" "}
+              {getVenue(photo.venue).name}
               <br />
-              Captured from the booth&apos;s view, with an AIBox frame.
+              {cameraPhoto
+                ? `${photo.frameName}. Captured from your camera and composed locally.`
+                : "Captured from the booth's view, with an AIBox frame."}
             </p>
             <a
               className="profile-text-link"
               href={photo.src}
-              download={`aibox-${photo.venue}-guest-${photo.guest + 1}.png`}
+              download={`aibox-${photo.venue}-${cameraPhoto ? "my-photostrip" : `guest-${photo.guest + 1}`}.png`}
             >
               <Download size={14} aria-hidden="true" /> Download PNG
             </a>
+            {onClear && (
+              <button type="button" className="scene-photo-clear" onClick={onClear}>
+                Clear this photo
+              </button>
+            )}
           </div>
-          <dialog className="scene-photo-dialog" ref={dialogRef} aria-label="Captured virtual photo">
+          <dialog
+            className="scene-photo-dialog"
+            ref={dialogRef}
+            aria-label={cameraPhoto ? "Your camera photostrip" : "Captured virtual photo"}
+          >
             <button
               type="button"
               className="scene-photo-close"
@@ -56,13 +72,7 @@ export function ScenePhotoPreview({ photo }: { photo: ScenePhoto | null }) {
             >
               <X size={18} aria-hidden="true" />
             </button>
-            <Image
-              src={photo.src}
-              alt="Your framed virtual AIBox photo"
-              width={660}
-              height={900}
-              unoptimized
-            />
+            <Image src={photo.src} alt={description} width={photo.width} height={photo.height} unoptimized />
           </dialog>
         </>
       ) : (
@@ -71,7 +81,10 @@ export function ScenePhotoPreview({ photo }: { photo: ScenePhoto | null }) {
           <div>
             <span className="profile-micro">your moment / photo preview</span>
             <h3>Your first moment is waiting.</h3>
-            <p>Choose a virtual guest. Send them to the booth. Their framed photo will appear here.</p>
+            <p>
+              Join as Guest 06, enable your camera, and take four peace-sign photos. Your AIBox photostrip
+              will appear here.
+            </p>
           </div>
         </>
       )}

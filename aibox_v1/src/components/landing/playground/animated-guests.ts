@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PHOTO_SPOT } from "./booth-layout";
 import { ScenePrimitives, type ScenePalette } from "./scene-primitives";
+import { EMPTY_VISITOR_HAND, VISITOR_GUEST, type VisitorHand } from "./playground-types";
 
 type Guest = {
   group: THREE.Group;
@@ -18,6 +19,7 @@ type Guest = {
     resumePhase: number;
   } | null;
   posing: boolean;
+  peaceFingers: THREE.Group;
 };
 
 const skinTones = ["#c98e6d", "#e6b492", "#865840", "#d7a07f"];
@@ -51,6 +53,13 @@ function createGuest(primitives: ScenePrimitives, palette: ScenePalette, index: 
   const rightArm = limb(0.36, 1.6, shirt, 0.42, 0.09);
   primitives.sphere(leftArm, skin, [0.1, 0.12, 0.1], [0, -0.55, 0]);
   primitives.sphere(rightArm, skin, [0.1, 0.12, 0.1], [0, -0.55, 0]);
+  const peaceFingers = new THREE.Group();
+  for (const direction of [-1, 1]) {
+    const finger = primitives.capsule(peaceFingers, skin, 0.026, 0.17, [direction * 0.05, -0.72, 0]);
+    finger.rotation.z = direction * 0.28;
+  }
+  peaceFingers.visible = false;
+  rightArm.add(peaceFingers);
   const leftLeg = limb(-0.15, 0.93, trousers, 0.62, 0.1);
   const rightLeg = limb(0.15, 0.93, trousers, 0.62, 0.1);
   primitives.box(leftLeg, hair, [0.21, 0.13, 0.35], [0, -0.78, 0.06]);
@@ -80,6 +89,7 @@ function createGuest(primitives: ScenePrimitives, palette: ScenePalette, index: 
     phase: index * 0.16,
     journey: null,
     posing: false,
+    peaceFingers,
   };
 }
 
@@ -115,6 +125,9 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
   let photoGuest: number | null = null;
   let selected = 0;
   let ambientElapsed = 0;
+  let visitorMovingUntil = 0;
+  const visitorReturnPosition = new THREE.Vector3(-3.4, 0, 2.7);
+  guests[VISITOR_GUEST].group.position.copy(visitorReturnPosition);
 
   function startJourney(guest: Guest, destination: THREE.Vector3, returning: boolean, resumePhase = 0) {
     const origin = guest.group.position.clone().setY(0);
@@ -139,11 +152,21 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
     const guest = guests[photoGuest];
     const phase = (((guest.phase + ambientElapsed / (46 + photoGuest * 5)) % 1) + 1) % 1;
     route.getPointAt(phase, point);
-    startJourney(guest, point.clone(), true, phase);
+    startJourney(
+      guest,
+      photoGuest === VISITOR_GUEST ? visitorReturnPosition.clone() : point.clone(),
+      true,
+      phase,
+    );
     photoGuest = null;
   }
 
-  function update(delta: number, animateAmbient: boolean, reducedMotion: boolean) {
+  function update(
+    delta: number,
+    animateAmbient: boolean,
+    reducedMotion: boolean,
+    hand: VisitorHand = EMPTY_VISITOR_HAND,
+  ) {
     if (animateAmbient && !reducedMotion) ambientElapsed += delta;
     guests.forEach((guest, index) => {
       guest.marker.visible = index === selected;
@@ -162,15 +185,18 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
           guest.posing = !journey.returning;
           if (journey.returning) guest.phase = journey.resumePhase - ambientElapsed / (46 + index * 5);
         }
-      } else if (!guest.posing) {
+      } else if (!guest.posing && index !== VISITOR_GUEST) {
         const progress = (((guest.phase + ambientElapsed / (46 + index * 5)) % 1) + 1) % 1;
         route.getPointAt(progress, point);
         route.getTangentAt(progress, tangent);
         guest.group.position.copy(point);
         guest.group.rotation.y = Math.atan2(tangent.x, tangent.z);
         walking = animateAmbient && !reducedMotion;
+      } else if (index === VISITOR_GUEST && !guest.posing) {
+        walking = performance.now() < visitorMovingUntil && !reducedMotion;
       }
       restLimbs(guest);
+      guest.peaceFingers.visible = false;
       if (walking) {
         const stride = Math.sin(ambientElapsed * 5 + (guest.journey?.elapsed ?? 0) * 5 + index * 2.2) * 0.34;
         guest.leftLeg.rotation.x = stride;
@@ -182,6 +208,10 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
         guest.group.rotation.y = Math.PI;
         guest.rightArm.rotation.z = -2.35 + (reducedMotion ? 0 : Math.sin(ambientElapsed * 2) * 0.1);
       }
+      if (index === VISITOR_GUEST && hand.detected && performance.now() - hand.updatedAt < 450) {
+        guest.rightArm.rotation.z = hand.peace ? -2.35 : THREE.MathUtils.lerp(-2.65, -1.1, hand.y);
+        guest.peaceFingers.visible = hand.peace;
+      }
     });
   }
   update(0, false, false);
@@ -189,6 +219,20 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
   return {
     group,
     update,
+    getVisitor() {
+      return guests[VISITOR_GUEST].group;
+    },
+    moveVisitorBy(x: number, z: number) {
+      if (photoGuest === VISITOR_GUEST) return;
+      const visitor = guests[VISITOR_GUEST];
+      visitor.journey = null;
+      visitor.posing = false;
+      visitor.group.position.x = THREE.MathUtils.clamp(visitor.group.position.x + x, -5.1, 5.1);
+      // The shared open aisle keeps the visitor clear of each venue's furniture and booth.
+      visitor.group.position.z = THREE.MathUtils.clamp(visitor.group.position.z + z, 1.8, 4.55);
+      if (Math.hypot(x, z) > 0.001) visitor.group.rotation.y = Math.atan2(x, z);
+      visitorMovingUntil = performance.now() + 180;
+    },
     select(index: number) {
       selected = THREE.MathUtils.clamp(index, 0, count - 1);
     },
@@ -196,6 +240,7 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
       release();
       photoGuest = THREE.MathUtils.clamp(index, 0, count - 1);
       selected = photoGuest;
+      if (photoGuest === VISITOR_GUEST) visitorReturnPosition.copy(guests[photoGuest].group.position);
       startJourney(guests[photoGuest], new THREE.Vector3(PHOTO_SPOT.x, 0, PHOTO_SPOT.z), false);
     },
     hasArrived() {
@@ -203,6 +248,9 @@ export function createAnimatedGuests(primitives: ScenePrimitives, palette: Scene
     },
     hasJourneys() {
       return guests.some((guest) => guest.journey !== null);
+    },
+    isVisitorMoving() {
+      return performance.now() < visitorMovingUntil;
     },
     release,
     /** Only the assigned guest appears in a portrait; restore everyone afterward. */

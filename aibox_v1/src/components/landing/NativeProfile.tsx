@@ -509,8 +509,8 @@ export function NativePlaygroundPage() {
         }
       >
         <p>
-          Explore a little world around AIBox. Choose a booth, look around the venue, and send a virtual guest
-          for a photo you can keep.
+          Join a little world around AIBox as Guest 06. Move with your hand, step up to the booth, and make
+          your own camera photostrip with a peace sign.
         </p>
       </PageIntro>
       <GesturePlayground showHeading={false} />
@@ -518,18 +518,18 @@ export function NativePlaygroundPage() {
         {[
           {
             icon: Move3d,
-            title: "Explore the whole scene",
-            text: "Drag to orbit, shift-drag to pan, and scroll to zoom. The view controls and arrow keys work too. Select Turn booth to explore only the portable box.",
+            title: "Guest 06 is you",
+            text: "Open your camera studio and allow camera access. Select Move You, then pinch and move your hand to walk your avatar. Drag and arrow keys work too. Orbit scene lets you look around.",
           },
           {
             icon: Camera,
-            title: "Direct a little moment",
-            text: "Choose a virtual guest and Send to booth. Once they arrive, Take photo starts a countdown. Enlarge or download their framed portrait below the scene.",
+            title: "Four poses. One photostrip.",
+            text: "Choose your AIBox frame and Go to photo spot. Once your avatar arrives, hold a peace sign to start each three-second countdown. Keep it visible until the shutter, then lower your hand before the next pose.",
           },
           {
             icon: Hand,
-            title: "Let your hands do it",
-            text: "Open Control with your hand and enable your camera. Pinch to explore, give a thumbs up to send a guest, and show a victory sign to capture when they're ready.",
+            title: "Keep your own moment",
+            text: "Your four webcam photos replace the sample photos in your selected AIBox photostrip. Enlarge, download, or clear your result. Video and photos stay in this browser. Guests 01–05 still offer simulated portraits.",
           },
         ].map(({ icon: Icon, title, text }, index) => (
           <article key={title}>

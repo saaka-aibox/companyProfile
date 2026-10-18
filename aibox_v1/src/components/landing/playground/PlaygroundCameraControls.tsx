@@ -3,8 +3,16 @@ import type { usePlaygroundControls } from "./usePlaygroundControls";
 
 export function PlaygroundCameraControls({
   controls,
+  visitorSelected = false,
+  countdown = null,
+  shotNumber = 1,
+  photoAspect,
 }: {
   controls: ReturnType<typeof usePlaygroundControls>;
+  visitorSelected?: boolean;
+  countdown?: number | null;
+  shotNumber?: number;
+  photoAspect?: number;
 }) {
   const {
     videoRef,
@@ -26,17 +34,23 @@ export function PlaygroundCameraControls({
     error: "Camera unavailable — see the guidance below",
   }[mode];
   return (
-    <details className="playground-hand-controls">
+    <details className="playground-hand-controls" open={visitorSelected ? true : undefined}>
       <summary>
         <Hand size={14} aria-hidden="true" />
         <span>
-          Control with your hand
-          <small>{cameraActive ? "camera on / local hand control" : "optional / camera access"}</small>
+          {visitorSelected ? "Your camera & hand control" : "Control with your hand"}
+          <small>
+            {cameraActive
+              ? "camera on / local hand control"
+              : visitorSelected
+                ? "required for your own photos"
+                : "optional / camera access"}
+          </small>
         </span>
         <ChevronDown size={14} aria-hidden="true" />
       </summary>
       <div className="playground-hand-content">
-        <div className="camera-window">
+        <div className="camera-window" style={photoAspect ? { aspectRatio: photoAspect } : undefined}>
           <video
             ref={videoRef}
             className={cameraActive ? "gesture-video is-visible" : "gesture-video"}
@@ -64,6 +78,12 @@ export function PlaygroundCameraControls({
             <i />
             {cameraActive ? "LIVE" : "CAMERA OFF"}
           </span>
+          {cameraActive && countdown !== null && (
+            <div className="visitor-camera-countdown" role="status">
+              <strong>{countdown}</strong>
+              <span>photo {shotNumber} / 4 · hold ✌</span>
+            </div>
+          )}
         </div>
         <div className="gesture-readout">
           <span className="control-label">gesture input</span>
@@ -71,7 +91,11 @@ export function PlaygroundCameraControls({
             <span className={`detection-dot${detected && mode === "ready" ? " is-detected" : ""}`} />
             {status}
           </div>
-          <p>Pinch + move: explore / thumbs up: send guest / victory sign: capture when ready.</p>
+          <p>
+            {visitorSelected
+              ? "Move You: pinch + move to walk. Thumbs up: go to the booth. Hold ✌ for each photo, keeping it visible through the countdown. Lower your hand between shots."
+              : "Pinch + move: explore / thumbs up: send guest / victory sign: capture when ready."}
+          </p>
         </div>
         {error && (
           <p className="playground-error" role="alert">
@@ -89,7 +113,7 @@ export function PlaygroundCameraControls({
               Cancel camera request
             </button>
           )}
-          {["idle", "error", "preview"].includes(mode) && (
+          {["idle", "error", "preview"].includes(mode) && (!visitorSelected || mode === "preview") && (
             <button type="button" className="button button-primary" onClick={enableCamera}>
               <Camera size={15} aria-hidden="true" />
               {mode === "preview"

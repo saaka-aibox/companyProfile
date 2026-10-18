@@ -30,7 +30,7 @@ export function createSceneNavigation(
 
   return {
     configure(mode: InteractionMode) {
-      controls.enabled = mode !== "booth";
+      controls.enabled = mode !== "booth" && mode !== "guest";
       controls.mouseButtons.LEFT = mode === "pan" ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
       controls.touches.ONE = mode === "pan" ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
     },

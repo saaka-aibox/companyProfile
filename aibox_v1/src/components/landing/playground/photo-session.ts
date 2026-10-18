@@ -5,10 +5,11 @@ import { EMPTY_PHOTO_TASK, type PhotoTask } from "./playground-types";
 export function createPhotoSession(
   guests: AnimatedGuests,
   onTask: (task: PhotoTask) => void,
-  capture: (guest: number) => void,
+  capture: (guest: number) => boolean | Promise<boolean>,
 ) {
   let task: PhotoTask = { ...EMPTY_PHOTO_TASK };
   let elapsed = 0;
+  let generation = 0;
 
   function transition(next: PhotoTask) {
     task = next;
@@ -20,7 +21,8 @@ export function createPhotoSession(
       return task;
     },
     send(guest: number) {
-      if (task.phase === "walking" || task.phase === "countdown") return;
+      if (["walking", "countdown", "processing"].includes(task.phase)) return;
+      generation += 1;
       guests.sendToBooth(guest);
       transition({ phase: "walking", guest, countdown: null });
     },
@@ -30,6 +32,7 @@ export function createPhotoSession(
       transition({ ...task, phase: "countdown", countdown: 3 });
     },
     cancel() {
+      generation += 1;
       guests.release();
       elapsed = 0;
       transition({ ...EMPTY_PHOTO_TASK });
@@ -45,12 +48,22 @@ export function createPhotoSession(
         if (countdown !== task.countdown) transition({ ...task, countdown });
         return;
       }
-      try {
-        capture(task.guest);
-        transition({ ...task, phase: "captured", countdown: null });
-      } catch {
-        transition({ ...task, phase: "error", countdown: null });
-      }
+      const current = generation;
+      transition({ ...task, phase: "processing", countdown: null });
+      // A camera session needs several peace-triggered shots; a virtual portrait needs one.
+      void Promise.resolve()
+        .then(() => {
+          if (generation !== current) return null;
+          return capture(task.guest);
+        })
+        .then((complete) => {
+          if (generation === current && complete !== null) {
+            transition({ ...task, phase: complete ? "captured" : "posing", countdown: null });
+          }
+        })
+        .catch(() => {
+          if (generation === current) transition({ ...task, phase: "error", countdown: null });
+        });
     },
   };
 }

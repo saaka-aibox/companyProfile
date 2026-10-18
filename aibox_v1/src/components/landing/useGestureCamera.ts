@@ -1,7 +1,7 @@
 "use client";
 
 import type { GestureRecognizer, GestureRecognizerResult } from "@mediapipe/tasks-vision";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 export type CameraMode = "idle" | "requesting" | "loading" | "ready" | "preview" | "error";
 type CameraSession = {
@@ -53,8 +53,12 @@ async function createRecognizer(): Promise<GestureRecognizer> {
 }
 
 /** Camera permission is requested before downloading the optional hand tracker. */
-export function useGestureCamera(onResult: (result: GestureRecognizerResult) => void) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+export function useGestureCamera(
+  onResult: (result: GestureRecognizerResult) => void,
+  sharedVideoRef?: RefObject<HTMLVideoElement | null>,
+) {
+  const internalVideoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = sharedVideoRef ?? internalVideoRef;
   const sessionRef = useRef<CameraSession | null>(null);
   const resultRef = useRef(onResult);
   const [mode, setMode] = useState<CameraMode>("idle");
@@ -77,7 +81,7 @@ export function useGestureCamera(onResult: (result: GestureRecognizerResult) => 
       video.pause();
       video.srcObject = null;
     }
-  }, []);
+  }, [videoRef]);
 
   const stopCamera = useCallback(() => {
     releaseSession();
@@ -153,13 +157,16 @@ export function useGestureCamera(onResult: (result: GestureRecognizerResult) => 
       sessionRef.current.loading = false;
       setMode("ready");
       let lastVideoTime = -1;
+      let lastInferenceAt = 0;
       const tick = () => {
         const video = videoRef.current;
         if (!isCurrent() || !sessionRef.current || !video) return;
-        if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        const now = performance.now();
+        if (!document.hidden && now - lastInferenceAt >= 50 && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+          lastInferenceAt = now;
           lastVideoTime = video.currentTime;
           try {
-            resultRef.current(recognizer.recognizeForVideo(video, performance.now()));
+            resultRef.current(recognizer.recognizeForVideo(video, now));
           } catch {
             // Keep the camera usable when tracking fails; allow an explicit retry.
             sessionRef.current.recognizer = null;
@@ -178,7 +185,7 @@ export function useGestureCamera(onResult: (result: GestureRecognizerResult) => 
       setMode("preview");
       setError("Your camera is ready, but hand control could not load. Check your internet connection and retry. You can still use drag and arrow keys.");
     }
-  }, [releaseSession]);
+  }, [releaseSession, videoRef]);
 
   return {
     videoRef, mode, error, startCamera, stopCamera,

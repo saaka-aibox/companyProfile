@@ -1,12 +1,13 @@
-import { Camera, Send, Users, X } from "lucide-react";
+import { Camera, Send, UserRound, Users, X } from "lucide-react";
 import {
   photoTaskBusy,
+  VISITOR_GUEST,
   type BoothKind,
   type ModelStatus,
   type PhotoTask,
   type SceneController,
 } from "./playground-types";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 
 type Props = {
   boothKind: BoothKind;
@@ -16,6 +17,7 @@ type Props = {
   status: ModelStatus;
   onSelect: (guest: number) => void;
   controllerRef: RefObject<SceneController | null>;
+  children?: ReactNode;
 };
 
 export function photoTaskDescription(task: PhotoTask) {
@@ -29,6 +31,8 @@ export function photoTaskDescription(task: PhotoTask) {
       return `Hold that pose. Capturing in ${task.countdown}…`;
     case "captured":
       return "Photo ready. Preview it below the scene.";
+    case "processing":
+      return "Preparing the photo preview…";
     case "error":
       return "The photo couldn't be captured. Try again.";
     default:
@@ -36,7 +40,16 @@ export function photoTaskDescription(task: PhotoTask) {
   }
 }
 
-export function PhotoTaskPanel({ boothKind, count, selected, task, status, onSelect, controllerRef }: Props) {
+export function PhotoTaskPanel({
+  boothKind,
+  count,
+  selected,
+  task,
+  status,
+  onSelect,
+  controllerRef,
+  children,
+}: Props) {
   const fixed = boothKind === "fixed";
   const busy = photoTaskBusy(task);
   const canCapture = ["posing", "captured", "error"].includes(task.phase);
@@ -48,9 +61,9 @@ export function PhotoTaskPanel({ boothKind, count, selected, task, status, onSel
       <p className="guest-task-intro">
         {fixed
           ? "Photo sessions for the fixed booth are coming soon. Select Portable to try one."
-          : "Click a person in the scene, or choose a virtual guest here."}
+          : "Guest 06 is you. Choose another guest to try a simulated portrait."}
       </p>
-      <div className="guest-options" role="group" aria-label="Choose a virtual guest">
+      <div className="guest-options" role="group" aria-label="Choose yourself or a virtual guest">
         {Array.from({ length: count }, (_, index) => (
           <button
             type="button"
@@ -59,51 +72,63 @@ export function PhotoTaskPanel({ boothKind, count, selected, task, status, onSel
             aria-pressed={index === selected}
             onClick={() => onSelect(index)}
           >
-            <Users size={12} aria-hidden="true" />
-            <span>Guest {String(index + 1).padStart(2, "0")}</span>
+            {index === VISITOR_GUEST ? (
+              <UserRound size={12} aria-hidden="true" />
+            ) : (
+              <Users size={12} aria-hidden="true" />
+            )}
+            <span>
+              {index === VISITOR_GUEST ? "Guest 06 · You" : `Guest ${String(index + 1).padStart(2, "0")}`}
+            </span>
           </button>
         ))}
       </div>
-      <p className="photo-task-status" role="status">
-        {fixed
-          ? "Fixed booth / coming soon"
-          : status !== "ready"
-            ? "The photo flow becomes available when the 3D booth is ready."
-            : photoTaskDescription(task)}
-      </p>
-      {!fixed && task.phase === "captured" && (
-        <a className="profile-text-link" href="#playground-photo-preview">
-          View your photo
-        </a>
-      )}
-      <button
-        type="button"
-        className="button profile-button-ink guest-task-button"
-        disabled={fixed || busy || status !== "ready"}
-        onClick={() =>
-          canCapture ? controllerRef.current?.captureGuest() : controllerRef.current?.sendGuest()
-        }
-      >
-        {canCapture ? <Camera size={14} aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}
-        {task.phase === "walking"
-          ? "Walking to the booth…"
-          : task.phase === "countdown"
-            ? "Capturing…"
-            : canCapture
-              ? task.phase === "captured"
-                ? "Take another photo"
-                : "Take photo"
-              : "Send to booth"}
-      </button>
-      {!fixed && task.phase !== "idle" && (
-        <button
-          type="button"
-          className="guest-task-cancel"
-          onClick={() => controllerRef.current?.cancelTask()}
-        >
-          <X size={12} aria-hidden="true" />
-          {task.phase === "captured" ? "Let guest rejoin the event" : "Cancel photo task"}
-        </button>
+      {!fixed && selected === VISITOR_GUEST ? (
+        children
+      ) : (
+        <>
+          <p className="photo-task-status" role="status">
+            {fixed
+              ? "Fixed booth / coming soon"
+              : status !== "ready"
+                ? "The photo flow becomes available when the 3D booth is ready."
+                : photoTaskDescription(task)}
+          </p>
+          {!fixed && task.phase === "captured" && (
+            <a className="profile-text-link" href="#playground-photo-preview">
+              View your photo
+            </a>
+          )}
+          <button
+            type="button"
+            className="button profile-button-ink guest-task-button"
+            disabled={fixed || busy || status !== "ready"}
+            onClick={() =>
+              canCapture ? controllerRef.current?.captureGuest() : controllerRef.current?.sendGuest()
+            }
+          >
+            {canCapture ? <Camera size={14} aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}
+            {task.phase === "walking"
+              ? "Walking to the booth…"
+              : task.phase === "countdown"
+                ? "Capturing…"
+                : canCapture
+                  ? task.phase === "captured"
+                    ? "Take another photo"
+                    : "Take photo"
+                  : "Send to booth"}
+          </button>
+          {!fixed && task.phase !== "idle" && (
+            <button
+              type="button"
+              className="guest-task-cancel"
+              onClick={() => controllerRef.current?.cancelTask()}
+            >
+              <X size={12} aria-hidden="true" />
+              {task.phase === "captured" ? "Let guest rejoin the event" : "Cancel photo task"}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

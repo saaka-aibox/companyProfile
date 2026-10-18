@@ -12,17 +12,35 @@ import {
 } from "react";
 import { useGestureCamera } from "../useGestureCamera";
 import { createPinchRotation, type BoothPose } from "./pinch-rotation";
-import type { InteractionMode, SceneController } from "./playground-types";
+import {
+  VISITOR_GUEST,
+  EMPTY_VISITOR_HAND,
+  type InteractionMode,
+  type SceneController,
+  type PhotoTask,
+  type VisitorHand,
+} from "./playground-types";
+import { createPeaceTrigger } from "./peace-trigger";
+
+type VisitorControls = {
+  videoRef: RefObject<HTMLVideoElement | null>;
+  handRef: RefObject<VisitorHand>;
+  selectedGuest: number;
+  task: PhotoTask;
+  visitorReady: boolean;
+};
 
 export function usePlaygroundControls(
   stageRef: RefObject<HTMLDivElement | null>,
   poseRef: RefObject<BoothPose>,
   controllerRef: RefObject<SceneController | null>,
   interactionMode: InteractionMode,
+  { videoRef, handRef, selectedGuest, task, visitorReady }: VisitorControls,
 ) {
   const pinchRef = useRef(createPinchRotation());
   const handPanRef = useRef<BoothPose | null>(null);
   const previousGestureRef = useRef<string | null>(null);
+  const peaceTriggerRef = useRef(createPeaceTrigger());
   const pointerRef = useRef<{ x: number; y: number; pose: BoothPose } | null>(null);
   const pointerActiveRef = useRef(false);
   const cameraAspectRef = useRef(4 / 3);
@@ -30,6 +48,7 @@ export function usePlaygroundControls(
   const [detected, setDetected] = useState(false);
   const [pinching, setPinching] = useState(false);
   const [hasExplored, setHasExplored] = useState(false);
+  const [peaceProgress, setPeaceProgress] = useState(0);
 
   const applyPose = useCallback(
     (pose: BoothPose) => {
@@ -47,12 +66,26 @@ export function usePlaygroundControls(
   const handleGesture = useCallback(
     (result: GestureRecognizerResult) => {
       const base =
-        interactionMode === "pan"
+        interactionMode === "pan" || interactionMode === "guest"
           ? { x: 0, y: 0 }
           : interactionMode === "booth"
             ? poseRef.current
             : (controllerRef.current?.getOrbitPose() ?? { x: 0, y: 0 });
       const grip = pinchRef.current.update(result.landmarks?.[0], base, cameraAspectRef.current);
+      const category = result.gestures?.[0]?.[0];
+      const now = performance.now();
+      const peace = Boolean(
+        grip.point && !grip.pinching && category?.categoryName === "Victory" && category.score >= 0.75,
+      );
+      handRef.current = { detected: Boolean(grip.point), peace, y: grip.point?.y ?? 0.5, updatedAt: now };
+      const visitor = selectedGuest === VISITOR_GUEST;
+      const peaceCapture = peaceTriggerRef.current.update(
+        peace,
+        visitor && visitorReady && ["posing", "error"].includes(task.phase) && !pointerActiveRef.current,
+        now,
+      );
+      setPeaceProgress(Math.floor(peaceCapture.progress * 4) / 4);
+      if (peaceCapture.triggered) controllerRef.current?.captureGuest();
       setDetected(Boolean(grip.point));
       setPinching(grip.pinching);
       stageRef.current?.dispatchEvent(
@@ -80,15 +113,24 @@ export function usePlaygroundControls(
       }
       if (grip.pinching && grip.pose) {
         setGesture(
-          interactionMode === "pan"
-            ? "Pinch held — move around the venue"
-            : interactionMode === "booth"
-              ? "Pinch held — turn the booth"
-              : "Pinch held — orbit the whole scene",
+          interactionMode === "guest"
+            ? "Pinch held — moving You / Guest 06"
+            : interactionMode === "pan"
+              ? "Pinch held — move around the venue"
+              : interactionMode === "booth"
+                ? "Pinch held — turn the booth"
+                : "Pinch held — orbit the whole scene",
         );
-        if (interactionMode === "pan") {
+        if (interactionMode === "pan" || interactionMode === "guest") {
           const previous = handPanRef.current ?? { x: 0, y: 0 };
-          controllerRef.current?.panBy((grip.pose.x - previous.x) * 4, (grip.pose.y - previous.y) * 4);
+          if (interactionMode === "guest") {
+            controllerRef.current?.moveVisitorBy(
+              (grip.pose.x - previous.x) * 0.025,
+              -(grip.pose.y - previous.y) * 0.035,
+            );
+          } else {
+            controllerRef.current?.panBy((grip.pose.x - previous.x) * 4, (grip.pose.y - previous.y) * 4);
+          }
           handPanRef.current = grip.pose;
           setHasExplored(true);
         } else {
@@ -98,35 +140,69 @@ export function usePlaygroundControls(
         return;
       }
       handPanRef.current = null;
-      const category = result.gestures?.[0]?.[0]?.categoryName;
-      const named = category && category !== "None" ? category.replaceAll("_", " ") : null;
-      setGesture(named ?? "Hand detected — pinch thumb and index finger");
+      const named =
+        category && category.categoryName !== "None" && category.score >= 0.75
+          ? category.categoryName.replaceAll("_", " ")
+          : null;
+      setGesture(
+        peace && visitor
+          ? "Peace sign detected — hold until the shutter"
+          : (named ?? "Hand detected — pinch thumb and index finger"),
+      );
       if (named !== previousGestureRef.current) {
         previousGestureRef.current = named;
-        if (named === "Victory") controllerRef.current?.captureGuest();
+        if (named === "Victory" && !visitor) controllerRef.current?.captureGuest();
         if (named === "Thumb Up") controllerRef.current?.sendGuest();
         if (named) stageRef.current?.dispatchEvent(new Event("aibox:gesture"));
       }
     },
-    [interactionMode, poseRef, controllerRef, stageRef, applyPose],
+    [
+      interactionMode,
+      poseRef,
+      controllerRef,
+      stageRef,
+      applyPose,
+      handRef,
+      selectedGuest,
+      task.phase,
+      visitorReady,
+    ],
   );
 
-  const camera = useGestureCamera(handleGesture);
+  const camera = useGestureCamera(handleGesture, videoRef);
+
+  useEffect(() => {
+    const releasePointer = () => {
+      pointerRef.current = null;
+      pointerActiveRef.current = false;
+    };
+    window.addEventListener("pointerup", releasePointer);
+    window.addEventListener("pointercancel", releasePointer);
+    return () => {
+      window.removeEventListener("pointerup", releasePointer);
+      window.removeEventListener("pointercancel", releasePointer);
+    };
+  }, []);
 
   useEffect(() => {
     pinchRef.current.reset();
     handPanRef.current = null;
+    peaceTriggerRef.current.reset();
+    handRef.current = { ...EMPTY_VISITOR_HAND };
     if (camera.mode !== "ready") {
       stageRef.current?.dispatchEvent(
         new CustomEvent("aibox:hand", { detail: { x: 0.5, y: 0.5, visible: false, pinching: false } }),
       );
     }
-  }, [camera.mode, interactionMode, stageRef]);
+  }, [camera.mode, interactionMode, selectedGuest, stageRef, handRef]);
 
   function clearHand() {
     pinchRef.current.reset();
     handPanRef.current = null;
     previousGestureRef.current = null;
+    peaceTriggerRef.current.reset();
+    handRef.current = { ...EMPTY_VISITOR_HAND };
+    setPeaceProgress(0);
     setPinching(false);
     setDetected(false);
     setGesture("Move your hand into view");
@@ -145,7 +221,7 @@ export function usePlaygroundControls(
     if (!event.isPrimary || event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
     pointerActiveRef.current = true;
     pinchRef.current.reset();
-    if (interactionMode !== "booth") {
+    if (interactionMode !== "booth" && interactionMode !== "guest") {
       setHasExplored(true);
       return;
     }
@@ -154,13 +230,22 @@ export function usePlaygroundControls(
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     const start = pointerRef.current;
-    if (!start || interactionMode !== "booth") return;
+    if (!start || (interactionMode !== "booth" && interactionMode !== "guest")) return;
     // Keep simple clicks on the canvas so the renderer can select a guest.
     if (
       Math.hypot(event.clientX - start.x, event.clientY - start.y) > 4 &&
       !event.currentTarget.hasPointerCapture(event.pointerId)
     ) {
       event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (interactionMode === "guest") {
+      controllerRef.current?.moveVisitorBy(
+        (event.clientX - start.x) * 0.015,
+        (event.clientY - start.y) * 0.015,
+      );
+      pointerRef.current = { ...start, x: event.clientX, y: event.clientY };
+      setHasExplored(true);
+      return;
     }
     applyPose({
       x: start.pose.x + (event.clientX - start.x) * 0.35,
@@ -195,6 +280,11 @@ export function usePlaygroundControls(
     if (!delta) return;
     event.preventDefault();
     pinchRef.current.reset();
+    if (interactionMode === "guest") {
+      controllerRef.current?.moveVisitorBy(delta.x * 0.05, delta.y * 0.07);
+      setHasExplored(true);
+      return;
+    }
     if (interactionMode === "pan" || (event.shiftKey && interactionMode !== "booth")) {
       controllerRef.current?.panBy(delta.x * 8, delta.y * 8);
       return;
@@ -212,6 +302,7 @@ export function usePlaygroundControls(
     detected,
     pinching,
     hasExplored,
+    peaceProgress,
     cameraAspectRef,
     resetView,
     enableCamera() {
