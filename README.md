@@ -11,6 +11,7 @@ Production domain: **https://aibox-photo.com**.
 | --- | --- |
 | `aibox_v1` | Public Next.js website: Home, Product, Gallery, Connect and Playground |
 | `manage_compro` | Separate CMS/admin application; not required for the public website |
+| `room_hub` | Node service for AI Box Room (paid online photobox, up to 4 devices) and AI hand-game rooms: orders/Tripay, WebSocket signaling + clock sync, presigned storage, fal.ai jobs. Runs on a VPS, not Vercel. See `room_hub/README.md` and `room_hub/CONTRACT.md` |
 
 ## Deploy to Vercel
 
@@ -40,3 +41,12 @@ npm run dev
 ```
 
 Open **http://localhost:3001**. The native public pages run without a CMS or database.
+
+## AI Box Room and Games (local)
+
+```powershell
+cd room_hub; npm install; npm run dev   # http://localhost:3011 (mock payment, local storage, mock AI)
+cd ../aibox_v1; npm run dev            # http://localhost:3001 -> /room and /games
+```
+
+Set `NEXT_PUBLIC_ROOM_HUB_URL` in `aibox_v1` when the hub runs elsewhere.
