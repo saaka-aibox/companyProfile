@@ -20,6 +20,8 @@ export function ProfileShell({ children }: { children: ReactNode }) {
             <Link href="/gallery">Gallery</Link>
             <Link href="/connect">Connect</Link>
             <Link href="/playground">Playground</Link>
+            <Link href="/room">Room</Link>
+            <Link href="/games">Games</Link>
           </nav>
           <a className="profile-footer-email" href="mailto:contact@aibox.id">Let’s make a moment <ArrowUpRight size={17} aria-hidden="true" /><span>contact@aibox.id</span></a>
         </div>

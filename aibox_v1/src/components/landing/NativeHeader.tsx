@@ -13,6 +13,8 @@ const pageLinks = [
   { label: "Gallery", href: "/gallery" },
   { label: "Connect", href: "/connect" },
   { label: "Playground", href: "/playground" },
+  { label: "Room", href: "/room" },
+  { label: "Games", href: "/games" },
 ];
 
 const productLinks = [
@@ -104,6 +106,8 @@ export function NativeHeader() {
             </div>
             <Link href="/gallery" aria-current={pathname === "/gallery" ? "page" : undefined}>Gallery</Link>
             <Link href="/connect" aria-current={pathname === "/connect" ? "page" : undefined}>Connect</Link>
+            <Link href="/room" aria-current={pathname.startsWith("/room") ? "page" : undefined}>Room</Link>
+            <Link href="/games" aria-current={pathname.startsWith("/games") ? "page" : undefined}>Games</Link>
           </nav>
           <div className="profile-nav-actions">
             <ThemeToggle />
