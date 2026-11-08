@@ -1,6 +1,7 @@
 import { Download, QrCode, Users, Wallet } from "lucide-react";
 import { Eyebrow } from "../../landing/profile/ProfileSections";
 import { CreateWizard } from "./CreateWizard";
+import { HubSettings } from "../shared/HubSettings";
 import { JoinByCode } from "./JoinByCode";
 import styles from "./create.module.css";
 
@@ -59,6 +60,7 @@ export function RoomLanding() {
 
       <section className={`profile-section profile-container ${styles.createSection}`} aria-label="Create a room" data-reveal>
         <CreateWizard />
+        <HubSettings />
       </section>
     </>
   );

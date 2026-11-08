@@ -10,6 +10,7 @@ import {
 import {
   PACKAGES, ROOM_FRAME_IDS, type CreateOrderRes, type OrderRes, type PackageId, type RoomFrameId,
 } from "../../../lib/room/protocol";
+import { withHub } from "../../../lib/room/hub-client";
 import { CopyShare } from "../shared/CopyShare";
 import { formatIdr } from "../shared/format";
 import { PaymentPanel } from "../shared/PaymentPanel";
@@ -139,7 +140,7 @@ export function CreateWizard() {
     setStep(2);
   }, []);
 
-  const inviteUrl = room && typeof window !== "undefined" ? `${window.location.origin}/room/${room.roomId}` : "";
+  const inviteUrl = room && typeof window !== "undefined" ? withHub(`${window.location.origin}/room/${room.roomId}`) : "";
 
   return (
     <div className={styles.wizard} id="create">

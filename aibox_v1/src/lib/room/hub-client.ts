@@ -3,8 +3,63 @@
 import type { ClientMsg, ServerMsg } from "./protocol";
 
 /** Base URL of the room_hub service (HTTP + WebSocket). */
-export const HUB_URL = (process.env.NEXT_PUBLIC_ROOM_HUB_URL || "http://localhost:3011").replace(/\/$/, "");
+const HUB_STORAGE_KEY = "aibox.hubUrl";
+const HUB_DEFAULT = (process.env.NEXT_PUBLIC_ROOM_HUB_URL || "http://localhost:3011").replace(/\/$/, "");
+
+/** Accepts only a plain http(s) origin (+ optional path); returns null when invalid. */
+export function normalizeHubUrl(raw: string): string | null {
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return (u.origin + u.pathname).replace(/\/$/, "");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Hub URL priority: `?hub=` in the page URL (saved for later) > value saved in this browser
+ * (the "Server settings" box) > NEXT_PUBLIC_ROOM_HUB_URL > http://localhost:3011.
+ */
+function resolveHubUrl(): string {
+  if (typeof window === "undefined") return HUB_DEFAULT;
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get("hub");
+    const q = fromQuery ? normalizeHubUrl(fromQuery) : null;
+    if (q) {
+      localStorage.setItem(HUB_STORAGE_KEY, q);
+      return q;
+    }
+    const saved = localStorage.getItem(HUB_STORAGE_KEY);
+    const s = saved ? normalizeHubUrl(saved) : null;
+    if (s) return s;
+  } catch {
+    /* storage blocked: fall through to the default */
+  }
+  return HUB_DEFAULT;
+}
+
+export const HUB_URL = resolveHubUrl();
 export const HUB_WS_URL = HUB_URL.replace(/^http/, "ws") + "/ws";
+export const HUB_DEFAULT_URL = HUB_DEFAULT;
+
+/** Saves (or clears with null) the hub URL for this browser. Callers should reload afterwards. */
+export function saveHubUrl(url: string | null) {
+  try {
+    if (url) localStorage.setItem(HUB_STORAGE_KEY, url);
+    else localStorage.removeItem(HUB_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Appends `?hub=` to an invite link when this browser uses a non-default hub, so guests' devices follow it. */
+export function withHub(url: string): string {
+  if (HUB_URL === HUB_DEFAULT) return url;
+  const u = new URL(url);
+  u.searchParams.set("hub", HUB_URL);
+  return u.toString();
+}
 
 type Handler<T extends ServerMsg["type"]> = (msg: Extract<ServerMsg, { type: T }>) => void;
 type Status = "connecting" | "open" | "closed";

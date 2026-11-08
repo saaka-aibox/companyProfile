@@ -1,4 +1,4 @@
-import { HUB_URL, HubClient, atServerTime, deviceId } from "../room/hub-client";
+import { HUB_URL, HubClient, atServerTime, deviceId, withHub } from "../room/hub-client";
 import type {
   CreateGameRoomRes, GameId, JoinRes, Peer, RoomSummary, ServerMsg,
 } from "../room/protocol";
@@ -80,7 +80,7 @@ function loadHostKey(roomId: string): string | undefined {
 
 export function gameShareLink(slug: GameId, roomId: string): string {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
-  return `${origin}/games/${slug}?room=${encodeURIComponent(roomId)}`;
+  return withHub(`${origin}/games/${slug}?room=${encodeURIComponent(roomId)}`);
 }
 
 // ---------------------------------------------------------------- HTTP
