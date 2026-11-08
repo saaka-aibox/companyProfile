@@ -3,6 +3,7 @@
 import { Check, Copy, Hand, MousePointerClick, Timer } from "lucide-react";
 import { useState } from "react";
 import type { Quorum, Trigger } from "../../../lib/room/protocol";
+import { withHub } from "../../../lib/room/hub-client";
 import s from "./session.module.css";
 
 const TRIGGERS: { id: Trigger; label: string; icon: typeof Hand }[] = [
@@ -54,7 +55,7 @@ export function InviteStrip({ roomId, joinCode }: { roomId: string; joinCode: st
   const [copied, setCopied] = useState<"link" | "code" | null>(null);
 
   async function copy(kind: "link" | "code") {
-    const text = kind === "link" ? `${window.location.origin}/room/${roomId}` : joinCode;
+    const text = kind === "link" ? withHub(`${window.location.origin}/room/${roomId}`) : joinCode;
     try {
       await navigator.clipboard.writeText(text);
     } catch {

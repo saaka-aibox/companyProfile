@@ -9,7 +9,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "test": "node --import tsx --test \"test/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "tunnel": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tunnel.ps1"
   },
   "dependencies": {
     "ws": "^8.18.0"

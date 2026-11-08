@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ProfileShell } from "../../components/landing/profile/ProfileShell";
+import { HubSettings } from "../../components/room/shared/HubSettings";
 import { GamesHub } from "../../components/games/GamesHub";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function GamesPage() {
   return (
     <ProfileShell>
       <GamesHub />
+      <div className="profile-container"><HubSettings /></div>
     </ProfileShell>
   );
 }
